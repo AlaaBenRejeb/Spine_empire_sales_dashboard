@@ -49,33 +49,33 @@ export default function ScriptBuddy({ activeLead }: { activeLead: any }) {
             initial={{ opacity: 0, scale: 0.95, y: 30 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 30 }}
-            className="fixed bottom-28 right-10 w-[460px] p-8 z-50 shadow-2xl bg-white border-2 border-black rounded-xl flex flex-col gap-6"
+            className="fixed bottom-28 right-10 w-[460px] p-8 z-50 shadow-2xl bg-[#0d0d0d] border-2 border-glass-border rounded-xl flex flex-col gap-6"
           >
             {/* Minimal Header */}
             <div className="flex justify-between items-center">
                <div className="flex items-center gap-3">
-                  <div className="w-4 h-4 bg-black rounded-full" />
-                  <h2 className="text-black font-heading font-black tracking-tight text-lg uppercase italic leading-none underline decoration-2 decoration-black underline-offset-4">BATTLE-CARD</h2>
+                  <div className="w-4 h-4 bg-primary rounded-full" />
+                  <h2 className="text-white font-heading font-black tracking-tight text-lg uppercase italic leading-none underline decoration-2 decoration-white/20 underline-offset-4">BATTLE-CARD</h2>
                </div>
                <button 
                   onClick={() => setIsOpen(false)} 
-                  className="text-black hover:bg-black/5 p-2 rounded-lg transition-all"
+                  className="text-muted-foreground hover:bg-white/10 hover:text-white p-2 rounded-lg transition-all"
                 >
                   <X size={24} strokeWidth={2.5} />
                </button>
             </div>
 
             {/* Mode Switcher */}
-            <div className="flex w-full border border-black p-1 rounded-lg">
+            <div className="flex w-full border border-glass-border p-1 rounded-lg">
               <button 
                 onClick={() => { setIsGatekeeper(false); setCurrentStep(0); }}
-                className={`flex-1 py-3 flex items-center justify-center gap-2 transition-all font-bold text-[10px] uppercase tracking-widest rounded-md ${!isGatekeeper ? 'bg-black text-white' : 'text-muted-foreground hover:text-black'}`}
+                className={`flex-1 py-3 flex items-center justify-center gap-2 transition-all font-bold text-[10px] uppercase tracking-widest rounded-md ${!isGatekeeper ? 'bg-white text-black' : 'text-muted-foreground hover:text-white'}`}
               >
                 <UserCheck size={14} /> OWNER
               </button>
               <button 
                 onClick={() => { setIsGatekeeper(true); setCurrentStep(0); }}
-                className={`flex-1 py-3 flex items-center justify-center gap-2 transition-all font-bold text-[10px] uppercase tracking-widest rounded-md ${isGatekeeper ? 'bg-black text-white' : 'text-muted-foreground hover:text-black'}`}
+                className={`flex-1 py-3 flex items-center justify-center gap-2 transition-all font-bold text-[10px] uppercase tracking-widest rounded-md ${isGatekeeper ? 'bg-white text-black' : 'text-muted-foreground hover:text-white'}`}
               >
                 <ShieldCheck size={14} /> GATEKEEPER
               </button>
@@ -83,13 +83,13 @@ export default function ScriptBuddy({ activeLead }: { activeLead: any }) {
 
             {/* Context Profile */}
             {activeLead && (
-              <div className="bg-black/5 p-5 rounded-xl flex items-center gap-4 border border-black/10">
-                <div className="bg-black text-white p-2.5 rounded-lg">
+              <div className="bg-white/5 p-5 rounded-xl flex items-center gap-4 border border-glass-border">
+                <div className="bg-white text-black p-2.5 rounded-lg">
                   <User size={18} strokeWidth={2.5} />
                 </div>
                 <div className="flex flex-col">
                   <span className="text-[8px] text-muted-foreground font-bold uppercase tracking-widest leading-none mb-1">TARGET</span>
-                  <span className="text-sm font-heading font-black tracking-tight truncate uppercase leading-none">{activeLead["Practice Name"]}</span>
+                  <span className="text-sm font-heading text-white font-black tracking-tight truncate uppercase leading-none">{activeLead["Practice Name"]}</span>
                 </div>
               </div>
             )}
@@ -97,16 +97,16 @@ export default function ScriptBuddy({ activeLead }: { activeLead: any }) {
             {/* Progress */}
             <div className="flex gap-1.5 px-1">
               {script.map((_, i) => (
-                <div key={i} className={`h-1.5 flex-1 transition-all duration-300 rounded-full border border-black ${i <= currentStep ? "bg-black" : "bg-white"}`} />
+                <div key={i} className={`h-1.5 flex-1 transition-all duration-300 rounded-full border border-glass-border ${i <= currentStep ? "bg-primary" : "bg-white/10"}`} />
               ))}
             </div>
 
             {/* Clean Script Engine - Resized Text */}
-            <div className="min-h-[180px] flex flex-col justify-center bg-white p-6 border-2 border-dashed border-black/20 rounded-xl relative">
+            <div className="min-h-[180px] flex flex-col justify-center bg-black p-6 border-2 border-dashed border-glass-border rounded-xl relative">
               <h3 className="text-[9px] text-muted-foreground uppercase font-black mb-5 tracking-widest opacity-60">
                  PHASE {currentStep + 1}: {script[currentStep].label}
               </h3>
-              <p className="text-black text-[22px] font-heading font-bold leading-tight uppercase italic text-center px-4">
+              <p className="text-white text-[22px] font-heading font-bold leading-tight uppercase italic text-center px-4">
                  "{script[currentStep].content}"
               </p>
             </div>
@@ -115,7 +115,7 @@ export default function ScriptBuddy({ activeLead }: { activeLead: any }) {
             <div className="flex justify-between items-center pt-4">
               <button 
                 onClick={() => setCurrentStep(Math.max(0, currentStep - 1))}
-                className="text-[10px] text-muted-foreground hover:text-black transition-all font-bold uppercase tracking-widest disabled:opacity-10 flex items-center gap-2"
+                className="text-[10px] text-muted-foreground hover:text-white transition-all font-bold uppercase tracking-widest disabled:opacity-10 flex items-center gap-2"
                 disabled={currentStep === 0}
               >
                 PREV
@@ -123,14 +123,14 @@ export default function ScriptBuddy({ activeLead }: { activeLead: any }) {
               {currentStep < script.length - 1 ? (
                 <button 
                   onClick={() => setCurrentStep(currentStep + 1)}
-                  className="bg-black text-white px-10 py-4 font-bold text-xs flex items-center gap-3 hover:opacity-90 transition-all rounded-xl shadow-lg uppercase tracking-widest"
+                  className="bg-white text-black px-10 py-4 font-bold text-xs flex items-center gap-3 hover:opacity-90 transition-all rounded-xl shadow-lg uppercase tracking-widest"
                 >
                   NEXT <ChevronRight size={18} strokeWidth={2.5} />
                 </button>
               ) : (
                 <button 
                   onClick={() => { setCurrentStep(0); setIsOpen(false); }}
-                  className="bg-green-500 text-black px-10 py-4 font-bold text-xs flex items-center gap-3 hover:opacity-90 transition-all rounded-xl shadow-lg border-2 border-black uppercase tracking-widest"
+                  className="bg-green-500 text-black px-10 py-4 font-bold text-xs flex items-center gap-3 hover:opacity-90 transition-all rounded-xl shadow-lg uppercase tracking-widest"
                 >
                   WIN <Check size={20} strokeWidth={2.5} />
                 </button>

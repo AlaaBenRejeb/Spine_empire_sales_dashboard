@@ -118,10 +118,21 @@ export default function Dashboard() {
                  <XCircle size={24} />
                </button>
 
-               <div className="flex flex-col gap-1">
-                  <span className="text-[10px] font-bold text-primary tracking-widest uppercase">ACTIVE OUTREACH</span>
-                  <h2 className="text-2xl font-heading font-black tracking-tight leading-none uppercase italic truncate">{activeLead["Practice Name"]}</h2>
-                  <span className="text-[10px] text-muted-foreground uppercase tracking-widest opacity-60 italic">{activeLead.City} • {activeLead.Phone}</span>
+               <div className="flex justify-between items-start">
+                 <div className="flex flex-col gap-1 pr-6">
+                    <span className="text-[10px] font-bold text-primary tracking-widest uppercase">ACTIVE OUTREACH</span>
+                    <h2 className="text-2xl font-heading font-black tracking-tight leading-none uppercase italic truncate">{activeLead["Practice Name"]}</h2>
+                    <span className="text-[10px] text-muted-foreground uppercase tracking-widest opacity-60 italic">{activeLead.City} • {activeLead.Phone}</span>
+                 </div>
+                 <button 
+                    onClick={() => {
+                        setNoteText("");
+                        updateLeadNote(activeLead.Email, { status: "new", comment: "" });
+                    }}
+                    className="text-[9px] font-black uppercase tracking-widest text-muted-foreground hover:text-red-500 hover:bg-red-500/10 transition-all px-3 py-1.5 rounded-md border border-glass-border shrink-0 mt-1"
+                 >
+                    RESET
+                 </button>
                </div>
 
                {/* Log Status Buttons */}
