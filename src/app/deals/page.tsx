@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Briefcase, MoreHorizontal, ChevronRight, Filter, Search, Plus, Target, Star, MapPin, Zap } from "lucide-react";
+import { Briefcase, MoreHorizontal, ChevronRight, Filter, Search, Plus, Target, Star, MapPin, Zap, User } from "lucide-react";
 import { useCRM } from "@/context/CRMContext";
 import leadsData from "@/data/leads.json";
 
@@ -101,9 +101,9 @@ export default function DealsPage() {
                             </div>
 
                             <div className="flex items-center gap-4 pt-4 border-t border-glass-border">
-                               <div className="flex items-center gap-2 px-3 py-1.5 bg-black/[0.03] dark:bg-white/5 border border-glass-border rounded-lg shadow-sm">
-                                  <Zap size={12} className="text-yellow-500" />
-                                  <span className="text-[10px] font-black text-muted-foreground">{reviews} REVIEWS</span>
+                               <div className="flex items-center gap-2 px-3 py-1.5 bg-black/[0.03] dark:bg-white/5 border border-glass-border rounded-lg shadow-sm truncate max-w-[160px]">
+                                  <User size={12} className="text-primary shrink-0" />
+                                  <span className="text-[10px] font-black text-muted-foreground truncate">{lead["First Name"] || "Owner"}</span>
                                </div>
                                {reviews > 150 && (
                                   <Star size={16} fill="hsl(var(--primary))" className="text-primary animate-float" />

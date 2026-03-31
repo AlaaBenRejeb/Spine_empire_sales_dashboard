@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { Search, Phone, Star, MapPin, ChevronRight, MessageSquare, Briefcase, Zap, Filter } from "lucide-react";
+import { Search, Phone, Star, MapPin, ChevronRight, MessageSquare, Briefcase, Zap, Filter, User } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import leadsData from "@/data/leads.json";
 import { useCRM } from "@/context/CRMContext";
@@ -82,7 +82,7 @@ export default function LeadList() {
                              </div>
                              <div className="flex items-center gap-4 text-[10px] font-bold text-muted-foreground uppercase tracking-widest leading-none">
                                 <span className="flex items-center gap-1.5"><MapPin size={12} /> {lead.City}</span>
-                                <span className="flex items-center gap-1.5 opacity-60"><Zap size={12} /> {reviews} REW</span>
+                                <span className="flex items-center gap-1.5 opacity-80"><User size={12} /> {lead["First Name"] || "Owner"}</span>
                              </div>
                           </div>
                        </div>
