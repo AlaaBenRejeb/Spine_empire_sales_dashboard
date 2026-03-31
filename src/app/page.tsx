@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { PhoneCall, Calendar, Target, TrendingUp, BarChart3, CheckSquare, Zap, Activity, MessageSquare, PhoneOutgoing, UserPlus, XCircle, CheckCircle2 } from "lucide-react";
+import { PhoneCall, Calendar, Target, TrendingUp, BarChart3, CheckSquare, Zap, Activity, MessageSquare, PhoneOutgoing, UserPlus, XCircle, CheckCircle2, RotateCcw } from "lucide-react";
 import LeadList from "@/components/LeadList";
 import PersonalTasks from "@/components/PersonalTasks";
 import { useCRM } from "@/context/CRMContext";
@@ -118,25 +118,14 @@ export default function Dashboard() {
                  <XCircle size={24} />
                </button>
 
-               <div className="flex justify-between items-start">
-                 <div className="flex flex-col gap-1 pr-6">
-                    <span className="text-[10px] font-bold text-primary tracking-widest uppercase">ACTIVE OUTREACH</span>
-                    <h2 className="text-2xl font-heading font-black tracking-tight leading-none uppercase italic truncate">{activeLead["Practice Name"]}</h2>
-                    <span className="text-[10px] text-muted-foreground uppercase tracking-widest opacity-60 italic">{activeLead.City} • {activeLead.Phone}</span>
-                 </div>
-                 <button 
-                    onClick={() => {
-                        setNoteText("");
-                        updateLeadNote(activeLead.Email, { status: "new", comment: "" });
-                    }}
-                    className="text-[9px] font-black uppercase tracking-widest text-muted-foreground hover:text-red-500 hover:bg-red-500/10 transition-all px-3 py-1.5 rounded-md border border-glass-border shrink-0 mt-1"
-                 >
-                    RESET
-                 </button>
+               <div className="flex flex-col gap-1">
+                  <span className="text-[10px] font-bold text-primary tracking-widest uppercase">ACTIVE OUTREACH</span>
+                  <h2 className="text-2xl font-heading font-black tracking-tight leading-none uppercase italic truncate">{activeLead["Practice Name"]}</h2>
+                  <span className="text-[10px] text-muted-foreground uppercase tracking-widest opacity-60 italic">{activeLead.City} • {activeLead.Phone}</span>
                </div>
 
                {/* Log Status Buttons */}
-               <div className="grid grid-cols-3 gap-3">
+               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                   <button 
                     onClick={() => handleStatusUpdate("booked")}
                     className={`flex flex-col items-center justify-center gap-2 p-4 rounded-xl border transition-all ${leadNotes[activeLead.Email]?.status === 'booked' ? 'bg-green-500 text-white border-green-500' : 'bg-secondary/50 border-glass-border hover:border-green-500/50'}`}
@@ -158,7 +147,18 @@ export default function Dashboard() {
                      <XCircle size={24} />
                      <span className="text-[10px] font-black uppercase">IGNORE</span>
                   </button>
+                  <button 
+                    onClick={() => {
+                        setNoteText("");
+                        updateLeadNote(activeLead.Email, { status: "new", comment: "" });
+                    }}
+                    className="flex flex-col items-center justify-center gap-2 p-4 rounded-xl border bg-secondary/50 border-glass-border hover:border-white transition-all text-muted-foreground hover:text-white"
+                  >
+                     <RotateCcw size={24} />
+                     <span className="text-[10px] font-black uppercase">RESET</span>
+                  </button>
                </div>
+
 
                {/* Call Notes Input */}
                <div className="flex flex-col gap-4 flex-1">

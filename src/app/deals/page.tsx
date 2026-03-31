@@ -53,11 +53,11 @@ export default function DealsPage() {
       </header>
 
       {/* Extreme Kanban Board */}
-      <div className="flex-1 overflow-x-auto overflow-y-hidden flex gap-8 pb-10 hide-scrollbar">
+      <div className="flex-1 overflow-x-auto overflow-y-hidden flex gap-8 pb-10 hide-scrollbar scroll-smooth snap-x">
         {COLUMNS.map((col, colIdx) => {
           const leads = getLeadsByStatus(col.id);
           return (
-            <div key={col.id} className="min-w-[380px] w-full flex flex-col gap-6">
+            <div key={col.id} className="min-w-[380px] max-w-[400px] flex-shrink-0 flex flex-col gap-6 snap-start">
               <div className="flex justify-between items-center px-4">
                 <div className="flex items-center gap-4 group">
                   <div className={`w-3 h-3 rounded-none ${col.color} animate-pulse border-2 border-black`} />
