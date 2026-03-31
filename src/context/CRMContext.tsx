@@ -1,12 +1,15 @@
 "use client";
 
 import React, { createContext, useContext, useEffect, useState } from "react";
+import { supabase } from "@/lib/supabase";
+import leadsData from "@/data/leads.json";
 
 interface CRMContextType {
   activeLead: any;
   setActiveLead: (lead: any) => void;
   leadNotes: Record<string, any>;
   updateLeadNote: (email: string, updates: any) => void;
+  loading: boolean;
 }
 
 const CRMContext = createContext<CRMContextType | undefined>(undefined);
@@ -14,23 +17,92 @@ const CRMContext = createContext<CRMContextType | undefined>(undefined);
 export function CRMProvider({ children }: { children: React.ReactNode }) {
   const [activeLead, setActiveLead] = useState<any>(null);
   const [leadNotes, setLeadNotes] = useState<Record<string, any>>({});
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const saved = localStorage.getItem("spine-empire-lead-notes");
-    if (saved) setLeadNotes(JSON.parse(saved));
+    const initCRM = async () => {
+      setLoading(true);
+      
+      // 1. Load local notes for immediate UI responsiveness
+      const saved = localStorage.getItem("spine-empire-lead-notes");
+      if (saved) setLeadNotes(JSON.parse(saved));
+
+      // 2. Sync with Supabase
+      try {
+        const { data: dbLeads, error } = await supabase
+          .from('leads')
+          .select('*');
+
+        if (!error && (dbLeads && dbLeads.length > 0)) {
+          // Merge DB statuses into local notes
+          const syncedNotes: Record<string, any> = {};
+          dbLeads.forEach(lead => {
+            const email = lead.metadata?.email || lead.id;
+            syncedNotes[email] = { 
+              status: lead.status, 
+              comment: lead.metadata?.comment || "" 
+            };
+          });
+          setLeadNotes(prev => ({ ...prev, ...syncedNotes }));
+        } else if (!error && (dbLeads && dbLeads.length === 0)) {
+          // SEED DATABASE: If empty, push the 982 targets from leads.json
+          console.log("Seeding Supabase with master target list...");
+          const batch = leadsData.slice(0, 100).map(l => ({
+            business_name: l["Practice Name"],
+            contact_name: `${l["First Name"]} ${l["Last Name"]}`,
+            phone: l.Phone,
+            revenue_range: l["Revenue Range"] || "Unknown",
+            main_challenge: l["Main Challenge"] || "",
+            status: 'new',
+            metadata: { 
+              email: l.Email, 
+              city: l.City, 
+              state: l.State,
+              google_reviews: l["Google Reviews"]
+            }
+          }));
+
+          await supabase.from('leads').insert(batch);
+        }
+      } catch (err) {
+        console.error("Setter sync failed:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    initCRM();
   }, []);
 
-  const updateLeadNote = (email: string, updates: any) => {
+  const updateLeadNote = async (email: string, updates: any) => {
+    // Optimistic UI Update
     const updated = { 
       ...leadNotes, 
       [email]: { ...(leadNotes[email] || { status: "new", comment: "" }), ...updates } 
     };
     setLeadNotes(updated);
     localStorage.setItem("spine-empire-lead-notes", JSON.stringify(updated));
+
+    // Sync to Supabase
+    try {
+      await supabase
+        .from('leads')
+        .update({ 
+          status: updates.status,
+          metadata: { 
+            ...(leadNotes[email] || {}), 
+            ...updates, 
+            email 
+          }
+        })
+        .or(`metadata->>email.eq.${email},business_name.eq.${activeLead?.['Practice Name']}`);
+    } catch (err) {
+      console.error("Supabase update failed:", err);
+    }
   };
 
   return (
-    <CRMContext.Provider value={{ activeLead, setActiveLead, leadNotes, updateLeadNote }}>
+    <CRMContext.Provider value={{ activeLead, setActiveLead, leadNotes, updateLeadNote, loading }}>
       {children}
     </CRMContext.Provider>
   );
