@@ -1,33 +1,22 @@
 "use client";
 
-import React, { createContext, useContext, useEffect, useState } from "react";
-
-type Theme = "dark" | "light";
+import React, { createContext, useContext } from "react";
 
 interface ThemeContextType {
-  theme: Theme;
+  theme: "dark";
   toggleTheme: () => void;
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setTheme] = useState<Theme>("dark");
-
-  useEffect(() => {
-    const saved = localStorage.getItem("spine-empire-theme") as Theme;
-    if (saved) setTheme(saved);
-  }, []);
-
-  const toggleTheme = () => {
-    const newTheme = theme === "dark" ? "light" : "dark";
-    setTheme(newTheme);
-    localStorage.setItem("spine-empire-theme", newTheme);
-  };
+  // Permanent Obsidian Mode
+  const theme = "dark";
+  const toggleTheme = () => console.log("Obsidian Mode is Permanent.");
 
   return (
     <ThemeContext.Provider value={{ theme, toggleTheme }}>
-      <div data-theme={theme} className="min-h-screen bg-background text-foreground transition-all duration-500">
+      <div className="dark contents">
         {children}
       </div>
     </ThemeContext.Provider>

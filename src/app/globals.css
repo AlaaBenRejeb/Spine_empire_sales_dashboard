@@ -6,11 +6,11 @@
 }
 
 :root {
-  /* Minimal Elite: Night (Deep Obsidian) */
+  /* Obsidian Elite: Permanent Theme */
   --background: 240 10% 2%;
   --foreground: 0 0% 98%;
   
-  --primary: 0 0% 100%; /* Pure White primary for Dark Mode */
+  --primary: 0 0% 100%; 
   --primary-foreground: 0 0% 0%;
   
   --secondary: 240 4% 10%;
@@ -19,7 +19,7 @@
   --muted: 240 4% 12%;
   --muted-foreground: 240 5% 60%;
   
-  --accent: 217 91% 60%; /* Soft Blue accent */
+  --accent: 217 91% 60%; 
   --accent-foreground: 0 0% 98%;
   
   --border: 240 4% 15%;
@@ -31,40 +31,14 @@
   --glass-glow: rgba(255, 255, 255, 0.05);
 }
 
-[data-theme="light"] {
-  /* Minimal Elite: Morning (Premium Paper) */
-  --background: 0 0% 98%;
-  --foreground: 0 0% 0%;
-  
-  --primary: 0 0% 0%; /* Pure Black primary */
-  --primary-foreground: 180 100% 100%;
-  
-  --secondary: 0 0% 92%;
-  --secondary-foreground: 0 0% 0%;
-  
-  --muted: 0 0% 90%;
-  --muted-foreground: 0 0% 40%;
-  
-  --accent: 0 0% 0%;
-  --accent-foreground: 0 0% 100%;
-  
-  --border: 0 0% 0%;
-  --input: 0 0% 0%;
-  --ring: 0 0% 0%;
-
-  --glass-bg: #ffffff;
-  --glass-border: rgba(0, 0, 0, 0.1);
-  --glass-glow: rgba(0, 0, 0, 0.02);
-}
-
 body {
   background-color: hsl(var(--background));
   color: hsl(var(--foreground));
   font-family: var(--font-sans);
   font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   overflow-x: hidden;
-  transition: background-color 0.4s ease, color 0.4s ease;
   letter-spacing: -0.01em;
+  -webkit-font-smoothing: antialiased;
 }
 
 h1, h2, h3, h4, h5, h6 {
@@ -82,22 +56,10 @@ h1, h2, h3, h4, h5, h6 {
   transition: all 0.3s ease;
 }
 
-[data-theme="dark"] .glass-card:hover {
+.glass-card:hover {
   background-color: rgba(255, 255, 255, 0.04);
   border-color: rgba(255, 255, 255, 0.1);
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
-}
-
-[data-theme="light"] .glass-card {
-  border: 1.5px solid #000000;
-  border-radius: 0.75rem;
-  box-shadow: 2px 2px 0px 0px #000000;
-  background-color: #ffffff;
-}
-
-[data-theme="light"] .glass-card:hover {
-  transform: translate(-1px, -1px);
-  box-shadow: 5px 5px 0px 0px #000000;
 }
 
 /* Typography Controls */
@@ -125,10 +87,4 @@ h1, h2, h3, h4, h5, h6 {
 .hide-scrollbar {
   -ms-overflow-style: none;
   scrollbar-width: none;
-}
-
-/* Layout Container */
-.container-elite {
-  max-width: 1600px;
-  margin: 0 auto;
 }
