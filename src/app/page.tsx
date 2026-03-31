@@ -4,10 +4,11 @@ import { motion, AnimatePresence } from "framer-motion";
 import { PhoneCall, Calendar, Target, TrendingUp, BarChart3, CheckSquare, Zap, Activity, MessageSquare, PhoneOutgoing, UserPlus, XCircle, CheckCircle2, RotateCcw } from "lucide-react";
 import LeadList from "@/components/LeadList";
 import PersonalTasks from "@/components/PersonalTasks";
+import LoginScreen from "@/components/LoginScreen";
 import { useCRM } from "@/context/CRMContext";
 import { useState, useEffect } from "react";
 
-export default function Dashboard() {
+function SetterDashboardContent() {
   const { activeLead, setActiveLead, leadNotes, updateLeadNote } = useCRM();
   const [noteText, setNoteText] = useState("");
 
@@ -213,4 +214,32 @@ export default function Dashboard() {
       </div>
     </div>
   );
+}
+
+export default function Dashboard() {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isChecking, setIsChecking] = useState(true);
+
+  useEffect(() => {
+    const authStatus = localStorage.getItem("spine_empire_setter_auth");
+    if (authStatus === "true") {
+      setIsAuthenticated(true);
+    }
+    setIsChecking(false);
+  }, []);
+
+  const handleLoginSuccess = () => {
+    localStorage.setItem("spine_empire_setter_auth", "true");
+    setIsAuthenticated(true);
+  };
+
+  if (isChecking) {
+    return <div className="h-screen w-full bg-[#0a0a0a]" />;
+  }
+
+  if (!isAuthenticated) {
+    return <LoginScreen onLogin={handleLoginSuccess} />;
+  }
+
+  return <SetterDashboardContent />;
 }
