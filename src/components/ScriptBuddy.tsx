@@ -43,10 +43,10 @@ export default function ScriptBuddy({ activeLead }: { activeLead: any }) {
         whileHover={{ scale: 1.1 }}
         whileTap={{ scale: 0.9 }}
         onClick={() => setIsOpen(true)}
-        className="fixed bottom-8 right-8 bg-primary text-black p-4 rounded-full shadow-2xl z-50 flex items-center gap-2 font-black"
+        className="fixed bottom-8 right-8 bg-black text-white p-5 rounded-none border-4 border-white shadow-2xl z-50 flex items-center gap-2 font-black uppercase text-xs tracking-widest"
       >
         <MessageSquare size={20} />
-        {!isOpen && <span>Script Buddy</span>}
+        {!isOpen && <span>Launch Battle-Card</span>}
       </motion.button>
 
       <AnimatePresence>
@@ -55,54 +55,54 @@ export default function ScriptBuddy({ activeLead }: { activeLead: any }) {
             initial={{ opacity: 0, y: 100, scale: 0.8 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 100, scale: 0.8 }}
-            className="fixed bottom-24 right-8 w-[420px] glass-card p-7 z-50 shadow-[0_20px_50px_rgba(0,0,0,0.5)] border-primary/50 bg-[#0a0a0acc] backdrop-blur-2xl ring-1 ring-primary/20"
+            className="fixed bottom-24 right-8 w-[480px] p-10 z-50 shadow-[0_30px_80px_rgba(0,0,0,0.8)] bg-white border-[6px] border-black rounded-none ring-[12px] ring-black/5"
           >
-            <div className="flex justify-between items-center mb-6">
-              <div className="flex items-center gap-2">
-                <div className="w-2.5 h-2.5 bg-primary rounded-full animate-pulse shadow-[0_0_12px_var(--primary-glow)]" />
-                <h2 className="text-primary font-black tracking-widest text-[10px] uppercase glow-text">ELITE BATTLE-CARD</h2>
+            <div className="flex justify-between items-center mb-10">
+              <div className="flex items-center gap-3">
+                <div className="w-4 h-4 bg-black rounded-none animate-pulse border-2 border-white" />
+                <h2 className="text-black font-black tracking-[0.3em] text-xs uppercase">ELITE BATTLE-CARD v2.0</h2>
               </div>
-              <button onClick={() => setIsOpen(false)} className="text-gray-500 hover:text-white transition-colors p-1">
-                <X size={20} />
+              <button onClick={() => setIsOpen(false)} className="text-black hover:text-red-600 transition-colors p-2">
+                <X size={32} strokeWidth={3} />
               </button>
             </div>
 
-            <div className="space-y-7">
+            <div className="space-y-10">
               {/* Progress Bar */}
               <div className="flex gap-2">
                 {script.map((_, i) => (
-                  <div key={i} className={`h-1.5 flex-1 rounded-full transition-all duration-500 ${i <= currentStep ? "bg-primary shadow-[0_0_15px_var(--primary-glow)]" : "bg-white/10"}`} />
+                  <div key={i} className={`h-4 flex-1 rounded-none transition-all duration-300 ${i <= currentStep ? "bg-black" : "bg-black/10"}`} />
                 ))}
               </div>
 
               {/* Data Context Header */}
               {activeLead && (
-                <div className="bg-white/5 p-4 rounded-2xl border border-white/10 flex items-center gap-4">
-                  <div className="bg-primary/20 p-2.5 rounded-xl border border-primary/20 shadow-inner">
-                    <User size={16} className="text-primary" />
+                <div className="bg-black text-white p-6 border-4 border-black flex items-center gap-6 shadow-xl">
+                  <div className="bg-white text-black p-4">
+                    <User size={24} strokeWidth={3} />
                   </div>
                   <div className="flex flex-col">
-                    <span className="text-[10px] text-gray-500 font-black uppercase tracking-widest leading-none mb-1">Active Call Pipeline</span>
-                    <span className="text-sm font-black text-white tracking-tight truncate">{activeLead["Practice Name"]}</span>
+                    <span className="text-[10px] text-white font-black uppercase tracking-[0.2em] leading-none mb-2 opacity-80">ACTIVE PIPELINE CONTEXT</span>
+                    <span className="text-xl font-black tracking-tight truncate uppercase italic">{activeLead["Practice Name"]}</span>
                   </div>
                 </div>
               )}
 
-              {/* Script Text - Optimized for High Contrast */}
-              <div className="min-h-[180px] flex flex-col justify-center">
-                <h3 className="text-[10px] text-gray-400 uppercase font-black mb-4 tracking-widest flex items-center gap-2">
-                  <span className="px-2 py-1 bg-primary/20 text-primary rounded-lg border border-primary/30 uppercase">{script[currentStep].label}</span>
+              {/* Script Text - Optimized for EXTREME Contrast */}
+              <div className="min-h-[260px] flex flex-col justify-center bg-black/5 p-8 border-2 border-black/10">
+                <h3 className="text-xs text-black uppercase font-black mb-6 tracking-[0.4em] flex items-center gap-3">
+                  <span className="px-4 py-2 bg-black text-white uppercase text-xs">STEP {currentStep + 1}: {script[currentStep].label}</span>
                 </h3>
-                <p className="text-white text-xl font-bold leading-relaxed italic border-l-4 border-primary pl-6 drop-shadow-sm shadow-black">
-                  "{script[currentStep].content}"
+                <p className="text-black text-3xl font-black leading-tight italic border-l-[16px] border-black pl-10 tracking-tight">
+                   "{script[currentStep].content}"
                 </p>
               </div>
 
               {/* Navigation */}
-              <div className="flex justify-between items-center pt-6 border-t border-white/10">
+              <div className="flex justify-between items-center pt-10 border-t-[6px] border-black">
                 <button 
                   onClick={() => setCurrentStep(Math.max(0, currentStep - 1))}
-                  className="text-[10px] text-gray-500 hover:text-foreground transition-colors font-black uppercase tracking-widest disabled:opacity-30"
+                  className="text-sm text-black hover:bg-black hover:text-white px-6 py-2 transition-all font-black uppercase tracking-widest disabled:opacity-10 underline decoration-black underline-offset-8"
                   disabled={currentStep === 0}
                 >
                   PREV
@@ -110,9 +110,9 @@ export default function ScriptBuddy({ activeLead }: { activeLead: any }) {
                 {currentStep < script.length - 1 ? (
                   <button 
                     onClick={() => setCurrentStep(currentStep + 1)}
-                    className="bg-primary/10 text-primary border border-primary/20 px-6 py-2.5 rounded-xl font-black text-xs flex items-center gap-2 hover:bg-primary hover:text-black transition-all shadow-lg shadow-primary/5"
+                    className="bg-black text-white px-12 py-5 font-black text-base flex items-center gap-4 hover:bg-green-600 transition-all active:scale-95 shadow-2xl uppercase tracking-widest"
                   >
-                    NEXT STEP <ChevronRight size={14} />
+                    NEXT STEP <ChevronRight size={20} strokeWidth={3} />
                   </button>
                 ) : (
                   <button 
@@ -120,9 +120,9 @@ export default function ScriptBuddy({ activeLead }: { activeLead: any }) {
                         setCurrentStep(0);
                         setIsOpen(false);
                     }}
-                    className="bg-green-500 text-black px-6 py-2.5 rounded-xl font-black text-xs flex items-center gap-2 hover:brightness-110 transition-all shadow-lg shadow-green-500/20"
+                    className="bg-green-500 text-black px-12 py-5 font-black text-base flex items-center gap-4 hover:bg-green-400 transition-all border-[6px] border-black shadow-2xl uppercase tracking-widest"
                   >
-                    CLOSE BATTLE-CARD <Check size={14} />
+                    FINISH CALL <Check size={24} strokeWidth={4} />
                   </button>
                 )}
               </div>

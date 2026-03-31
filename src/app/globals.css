@@ -18,15 +18,15 @@
 }
 
 [data-theme="light"] {
-  /* Stark Morning Mode (For Alex) */
+  /* Stark Morning Mode (Elite White) */
   --background: #ffffff;
   --foreground: #000000;
-  --primary: #0284c7; 
-  --primary-glow: rgba(2, 132, 199, 0.15);
+  --primary: #000000; 
+  --primary-glow: rgba(0, 0, 0, 0.05);
   --glass: #ffffff;
-  --glass-border: #e2e8f0;
-  --sidebar-item: #f8fafc;
-  --card-shadow: 0 0 1px rgba(0,0,0,0.1), 0 2px 4px rgba(0,0,0,0.05);
+  --glass-border: #000000;
+  --sidebar-item: #f1f5f9;
+  --card-shadow: none;
 }
 
 body {
@@ -34,52 +34,53 @@ body {
   color: var(--foreground);
   font-family: var(--font-sans);
   overflow-x: hidden;
-  transition: background 0.3s ease, color 0.3s ease;
+  transition: background 0.2s ease, color 0.2s ease;
 }
 
 .glass-card {
   background: var(--glass);
   backdrop-filter: blur(12px);
   border: 1px solid var(--glass-border);
-  border-radius: 1.25rem;
+  border-radius: 1rem;
   box-shadow: var(--card-shadow);
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
 }
 
 [data-theme="light"] .glass-card {
-  border: 2px solid #000000;
-  border-radius: 0.75rem; /* High contrast sharp corners */
-  box-shadow: 4px 4px 0px 0px #000000; /* Neo-brutalist tech look */
+  border: 2px solid #000000 !important;
+  background: #ffffff !important;
+  border-radius: 0px !important; /* Sharp Elite look for Morning */
+  box-shadow: 6px 6px 0px 0px #000000 !important;
+  backdrop-filter: none !important;
 }
 
-.glass-card:hover {
-  border-color: var(--primary);
-  transform: translateY(-2px);
+[data-theme="light"] aside {
+  background: #ffffff !important;
+  border-right: 2px solid #000000 !important;
 }
 
-[data-theme="dark"] .glass-card:hover {
-    box-shadow: 0 0 25px var(--primary-glow);
+[data-theme="light"] input, 
+[data-theme="light"] textarea {
+  background: #ffffff !important;
+  border: 2px solid #000000 !important;
+  color: #000000 !important;
 }
 
-[data-theme="light"] .glass-card:hover {
-    box-shadow: 6px 6px 0px 0px #000000;
+[data-theme="light"] h1, 
+[data-theme="light"] h2, 
+[data-theme="light"] h3, 
+[data-theme="light"] span, 
+[data-theme="light"] p, 
+[data-theme="light"] div {
+  color: #000000 !important;
 }
 
 .glow-text {
   text-shadow: 0 0 10px var(--primary-glow);
 }
 
-/* Stark Morning Typography */
-[data-theme="light"] h1, 
-[data-theme="light"] h2, 
-[data-theme="light"] h3,
-[data-theme="light"] p {
-    color: #000000 !important;
-}
-
-[data-theme="light"] .text-gray-500 {
-    color: #000000 !important;
-    opacity: 0.6;
+[data-theme="light"] .glow-text {
+  text-shadow: none !important;
 }
 
 .hide-scrollbar::-webkit-scrollbar {
