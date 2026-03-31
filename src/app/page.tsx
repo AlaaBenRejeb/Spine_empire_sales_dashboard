@@ -21,6 +21,7 @@ function formatTime12Hour(time24: string) {
 function SetterDashboardContent() {
   const { activeLead, setActiveLead, leadNotes, updateLeadNote } = useCRM();
   const [noteText, setNoteText] = useState("");
+  const [scheduledDate, setScheduledDate] = useState(new Date().toISOString().split('T')[0]);
   const [scheduledTime, setScheduledTime] = useState("09:00");
   const [isAddLeadModalOpen, setIsAddLeadModalOpen] = useState(false);
 
@@ -40,7 +41,7 @@ function SetterDashboardContent() {
     if (activeLead) {
       const updates: any = { status, comment: noteText };
       if (status === "booked") {
-        updates.scheduled_time = formatTime12Hour(scheduledTime); 
+        updates.scheduled_time = `${scheduledDate} @ ${formatTime12Hour(scheduledTime)}`; 
       }
       updateLeadNote(activeLead.Email, updates);
     }
@@ -184,35 +185,50 @@ function SetterDashboardContent() {
                </div>
 
 
-               {/* Call Notes & Time Input */}
-               <div className="flex flex-col md:flex-row gap-4 flex-1">
-                  <div className="flex flex-col gap-4 flex-1">
-                    <div className="flex justify-between items-end">
-                      <span className="text-[10px] font-black uppercase tracking-widest opacity-40">Interaction Notes</span>
-                      <MessageSquare size={14} className="opacity-20" />
-                    </div>
-                    <textarea 
-                      value={noteText}
-                      onChange={(e) => setNoteText(e.target.value)}
-                      onBlur={() => handleStatusUpdate(leadNotes[activeLead.Email]?.status || "called")}
-                      placeholder="Log gatekeeper feedback, objections, or next steps..."
-                      className="flex-1 bg-black/50 border-2 border-glass-border p-6 rounded-2xl text-sm font-bold placeholder:italic placeholder:opacity-30 focus:border-primary outline-none transition-all resize-none"
-                    />
+               {/* New High-Fidelity Scheduling Section */}
+               <div className="flex flex-col gap-4 p-6 bg-primary/5 rounded-2xl border border-primary/20 shadow-inner">
+                  <div className="flex justify-between items-center">
+                    <span className="text-[10px] font-black uppercase tracking-widest text-primary flex items-center gap-2">
+                      <Calendar size={14} /> Schedule Demo
+                    </span>
+                    <span className="text-[9px] font-bold opacity-30 uppercase tracking-widest italic">Optional for non-booked</span>
                   </div>
                   
-                  {/* Time Picker Slider/Input */}
-                  <div className="flex flex-col gap-4 w-full md:w-1/3">
-                    <div className="flex justify-between items-end">
-                      <span className="text-[10px] font-black uppercase tracking-widest opacity-40 text-primary">Demo Time</span>
-                      <Calendar size={14} className="opacity-20" />
-                    </div>
-                    <input 
-                      type="time" 
-                      value={scheduledTime}
-                      onChange={(e) => setScheduledTime(e.target.value)}
-                      className="bg-black/50 border-2 border-primary/40 focus:border-primary p-6 rounded-2xl text-lg font-black text-white outline-none transition-all w-full leading-none"
-                    />
+                  <div className="grid grid-cols-2 gap-4">
+                     <div className="flex flex-col gap-2">
+                        <span className="text-[9px] font-bold uppercase tracking-widest opacity-40 ml-1">Date</span>
+                        <input 
+                          type="date" 
+                          value={scheduledDate}
+                          onChange={(e) => setScheduledDate(e.target.value)}
+                          className="bg-black/50 border border-white/10 focus:border-primary p-4 rounded-xl text-xs font-bold text-white outline-none transition-all w-full leading-none"
+                        />
+                     </div>
+                     <div className="flex flex-col gap-2">
+                        <span className="text-[9px] font-bold uppercase tracking-widest opacity-40 ml-1">Time</span>
+                        <input 
+                          type="time" 
+                          value={scheduledTime}
+                          onChange={(e) => setScheduledTime(e.target.value)}
+                          className="bg-black/50 border border-white/10 focus:border-primary p-4 rounded-xl text-xs font-bold text-white outline-none transition-all w-full leading-none"
+                        />
+                     </div>
                   </div>
+               </div>
+
+               {/* Interaction Notes */}
+               <div className="flex flex-col gap-4 flex-1">
+                  <div className="flex justify-between items-end">
+                    <span className="text-[10px] font-black uppercase tracking-widest opacity-40">Interaction Notes</span>
+                    <MessageSquare size={14} className="opacity-20" />
+                  </div>
+                  <textarea 
+                    value={noteText}
+                    onChange={(e) => setNoteText(e.target.value)}
+                    onBlur={() => handleStatusUpdate(leadNotes[activeLead.Email]?.status || "called")}
+                    placeholder="Log gatekeeper feedback, objections, or next steps..."
+                    className="flex-1 bg-black/50 border-2 border-glass-border p-6 rounded-2xl text-sm font-bold placeholder:italic placeholder:opacity-30 focus:border-primary outline-none transition-all resize-none min-h-[150px]"
+                  />
                </div>
 
                <div className="p-6 bg-secondary/30 rounded-2xl border border-glass-border flex items-center justify-between">
