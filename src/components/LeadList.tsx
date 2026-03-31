@@ -3,19 +3,18 @@
 import { useState, useMemo } from "react";
 import { Search, Phone, Star, MapPin, ChevronRight, MessageSquare, Briefcase, Zap, Filter, User } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import leadsData from "@/data/leads.json";
 import { useCRM } from "@/context/CRMContext";
 
 export default function LeadList() {
   const [search, setSearch] = useState("");
-  const { activeLead, setActiveLead, leadNotes, updateLeadNote } = useCRM();
+  const { activeLead, setActiveLead, leadNotes, updateLeadNote, leads } = useCRM();
 
   const filteredLeads = useMemo(() => {
-    return leadsData.filter(lead => 
+    return leads.filter(lead => 
       lead["Practice Name"].toLowerCase().includes(search.toLowerCase()) ||
       lead.City.toLowerCase().includes(search.toLowerCase())
     ).slice(0, 50);
-  }, [search]);
+  }, [search, leads]);
 
   return (
     <div className="flex flex-col h-full gap-8">

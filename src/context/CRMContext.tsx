@@ -10,6 +10,7 @@ interface CRMContextType {
   leadNotes: Record<string, any>;
   updateLeadNote: (email: string, updates: any) => void;
   addLead: (lead: any) => Promise<void>;
+  leads: any[];
   loading: boolean;
 }
 
@@ -18,6 +19,7 @@ const CRMContext = createContext<CRMContextType | undefined>(undefined);
 export function CRMProvider({ children }: { children: React.ReactNode }) {
   const [activeLead, setActiveLead] = useState<any>(null);
   const [leadNotes, setLeadNotes] = useState<Record<string, any>>({});
+  const [leads, setLeads] = useState<any[]>(leadsData);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -37,6 +39,19 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
         if (!error && (dbLeads && dbLeads.length > 0)) {
           // Merge DB statuses into local notes
           const syncedNotes: Record<string, any> = {};
+          const syncedLeads: any[] = dbLeads.map(lead => ({
+            "Practice Name": lead.business_name,
+            "First Name": lead.contact_name?.split(' ')[0] || "Owner",
+            "Last Name": lead.contact_name?.split(' ').slice(1).join(' ') || "",
+            Phone: lead.phone || "",
+            City: lead.metadata?.city || "",
+            State: lead.metadata?.state || "",
+            "Google Reviews": lead.metadata?.google_reviews || "0",
+            Email: lead.metadata?.email || lead.id,
+            "Revenue Range": lead.revenue_range || "Unknown",
+            "Main Challenge": lead.main_challenge || ""
+          }));
+
           dbLeads.forEach(lead => {
             const email = lead.metadata?.email || lead.id;
             syncedNotes[email] = { 
@@ -45,6 +60,7 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
             };
           });
           setLeadNotes(prev => ({ ...prev, ...syncedNotes }));
+          setLeads(syncedLeads);
         } else if (!error && (dbLeads && dbLeads.length === 0)) {
           // SEED DATABASE: If empty, push the 982 targets from leads.json
           console.log("Seeding Supabase with master target list...");
@@ -134,11 +150,24 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
 
       if (!error && data) {
         // Update local state so it appears in the list
-        const newLead = data[0];
-        const email = newLead.metadata?.email || newLead.id;
+        const newLeadRaw = data[0];
+        const newLeadTransformed = {
+          "Practice Name": newLeadRaw.business_name,
+          "First Name": newLeadRaw.contact_name?.split(' ')[0] || "Owner",
+          "Last Name": newLeadRaw.contact_name?.split(' ').slice(1).join(' ') || "",
+          Phone: newLeadRaw.phone || "",
+          City: newLeadRaw.metadata?.city || "",
+          State: newLeadRaw.metadata?.state || "",
+          "Google Reviews": newLeadRaw.metadata?.google_reviews || "0",
+          Email: newLeadRaw.metadata?.email || newLeadRaw.id,
+          "Revenue Range": newLeadRaw.revenue_range || "Unknown",
+          "Main Challenge": newLeadRaw.main_challenge || ""
+        };
+
+        setLeads(prev => [newLeadTransformed, ...prev]);
         setLeadNotes(prev => ({ 
           ...prev, 
-          [email]: { status: 'new', comment: "" } 
+          [newLeadTransformed.Email]: { status: 'new', comment: "" } 
         }));
       } else if (error) {
         console.error("Manual lead insert failed:", error);
@@ -149,7 +178,7 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <CRMContext.Provider value={{ activeLead, setActiveLead, leadNotes, updateLeadNote, addLead, loading }}>
+    <CRMContext.Provider value={{ activeLead, setActiveLead, leadNotes, updateLeadNote, addLead, leads, loading }}>
       {children}
     </CRMContext.Provider>
   );
