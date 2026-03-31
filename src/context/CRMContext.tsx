@@ -47,9 +47,9 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
         } else if (!error && (dbLeads && dbLeads.length === 0)) {
           // SEED DATABASE: If empty, push the 982 targets from leads.json
           console.log("Seeding Supabase with master target list...");
-          const batch = leadsData.slice(0, 100).map(l => ({
+          const batch = (leadsData as any[]).slice(0, 100).map(l => ({
             business_name: l["Practice Name"],
-            contact_name: `${l["First Name"]} ${l["Last Name"]}`,
+            contact_name: `${l["First Name"]} ${l["Last Name"] || ""}`,
             phone: l.Phone,
             revenue_range: l["Revenue Range"] || "Unknown",
             main_challenge: l["Main Challenge"] || "",
@@ -92,10 +92,13 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
           metadata: { 
             ...(leadNotes[email] || {}), 
             ...updates, 
-            email 
+            email,
+            synced_at: new Date().toISOString()
           }
         })
         .or(`metadata->>email.eq.${email},business_name.eq.${activeLead?.['Practice Name']}`);
+        
+      console.log(`[v0] Synchronized ${email} to ${updates.status}`);
     } catch (err) {
       console.error("Supabase update failed:", err);
     }

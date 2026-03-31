@@ -26,7 +26,12 @@ function SetterDashboardContent() {
 
   const handleStatusUpdate = (status: string) => {
     if (activeLead) {
-      updateLeadNote(activeLead.Email, { status, comment: noteText });
+      const updates: any = { status, comment: noteText };
+      if (status === "booked") {
+        // Default to next available slot (e.g., 09:00 AM) or current time
+        updates.scheduled_time = "09:00 AM"; 
+      }
+      updateLeadNote(activeLead.Email, updates);
     }
   };
 
