@@ -1,7 +1,7 @@
 "use client";
 
-import { motion } from "framer-motion";
-import { Briefcase, MoreHorizontal, ChevronRight, Filter, Search, Plus, Target, Star, MapPin, Zap, User, Mail, MessageSquare, DollarSign } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Briefcase, MoreHorizontal, ChevronRight, Filter, Search, Plus, Target, Star, MapPin, Zap, User, Mail, MessageSquare, DollarSign, Phone, ArrowLeftRight, CheckCircle2 } from "lucide-react";
 import { useCRM } from "@/context/CRMContext";
 import leadsData from "@/data/leads.json";
 import FollowUpModal from "@/components/FollowUpModal";
@@ -15,10 +15,11 @@ const COLUMNS = [
 ];
 
 export default function DealsPage() {
-  const { leadNotes, setActiveLead } = useCRM();
+  const { leadNotes, setActiveLead, updateLeadNote } = useCRM();
   const [selectedLead, setSelectedLead] = useState<any>(null);
   const [isFollowUpOpen, setIsFollowUpOpen] = useState(false);
   const [followUpTab, setFollowUpTab] = useState<"email" | "sms">("email");
+  const [stageSelectorId, setStageSelectorId] = useState<string | null>(null);
 
   const getLeadsByStatus = (status: string) => {
     return leadsData.filter((lead) => {
@@ -58,7 +59,7 @@ export default function DealsPage() {
       </header>
 
       {/* Extreme Kanban Board */}
-      <div className="flex-1 overflow-x-auto overflow-y-hidden flex gap-8 pb-10 hide-scrollbar scroll-smooth snap-x">
+      <div className="flex-1 overflow-x-auto overflow-y-hidden flex gap-8 pb-10 scroll-smooth snap-x custom-scrollbar">
         {COLUMNS.map((col, colIdx) => {
           const leads = getLeadsByStatus(col.id);
           return (
@@ -77,7 +78,7 @@ export default function DealsPage() {
               </div>
 
               <div className="flex-1 bg-secondary/30 rounded-3xl border-2 border-glass-border p-6 flex flex-col gap-6 overflow-y-auto hide-scrollbar group-hover:border-primary/20 transition-all hover:bg-secondary/50 shadow-inner translate-z-0">
-                {leads.map((lead, idx) => {
+                {leads.map((lead: any, idx) => {
                    const reviews = parseInt(lead["Google Reviews"]?.toString() || "0");
                    return (
                      <motion.div
@@ -110,11 +111,30 @@ export default function DealsPage() {
                                    <User size={12} className="text-primary shrink-0" />
                                    <span className="text-[10px] font-black text-muted-foreground truncate">{lead["First Name"] || "Owner"}</span>
                                 </div>
-                                <div className="flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 border border-primary/20 rounded-lg shadow-sm">
+                                 <div className="flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 border border-primary/20 rounded-lg shadow-sm group/val relative">
                                    <DollarSign size={12} className="text-primary" />
-                                   <span className="text-[10px] font-black text-primary">$4,000</span>
+                                   <input 
+                                      type="text"
+                                      defaultValue={leadNotes[lead.Email]?.deal_value || lead.DealValue || 4000}
+                                      onBlur={(e) => {
+                                         const val = parseInt(e.target.value.replace(/\D/g, ''));
+                                         updateLeadNote(lead.Email, { deal_value: val || 4000 });
+                                      }}
+                                      className="text-[10px] font-black text-primary bg-transparent border-none outline-none w-14 focus:ring-0 p-0"
+                                   />
+                                   <div className="absolute -top-6 left-1/2 -translate-x-1/2 bg-black text-white text-[8px] font-black uppercase px-2 py-1 rounded opacity-0 group-hover/val:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">Edit Value</div>
                                 </div>
-                                <div className="ml-auto flex items-center gap-2">
+                                 <div className="ml-auto flex items-center gap-2">
+                                   <button 
+                                      onClick={(e) => {
+                                         e.stopPropagation();
+                                         setActiveLead(lead);
+                                      }}
+                                      className="p-2.5 bg-emerald-500 text-white rounded-xl hover:bg-emerald-600 transition-all shadow-lg hover:scale-110 active:scale-95 animate-pulse"
+                                      title="Open Battle Card"
+                                   >
+                                      <Phone size={14} strokeWidth={3} />
+                                   </button>
                                    <button 
                                       onClick={(e) => {
                                          e.stopPropagation();
@@ -127,18 +147,43 @@ export default function DealsPage() {
                                    >
                                       <Mail size={14} strokeWidth={3} />
                                    </button>
-                                   <button 
-                                      onClick={(e) => {
-                                         e.stopPropagation();
-                                         setSelectedLead(lead);
-                                         setFollowUpTab("sms");
-                                         setIsFollowUpOpen(true);
-                                      }}
-                                      className="p-2.5 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 transition-all shadow-lg hover:scale-110 active:scale-95"
-                                      title="SMS Script"
-                                   >
-                                      <MessageSquare size={14} strokeWidth={3} />
-                                   </button>
+                                   <div className="relative">
+                                      <button 
+                                         onClick={(e) => {
+                                            e.stopPropagation();
+                                            setStageSelectorId(stageSelectorId === lead.Email ? null : lead.Email);
+                                         }}
+                                         className={`p-2.5 rounded-xl transition-all shadow-lg hover:scale-110 active:scale-95 ${stageSelectorId === lead.Email ? 'bg-white text-black' : 'bg-white/10 text-white hover:bg-white/20'}`}
+                                         title="Move Stage"
+                                      >
+                                         <ArrowLeftRight size={14} strokeWidth={3} />
+                                      </button>
+                                      <AnimatePresence>
+                                         {stageSelectorId === lead.Email && (
+                                            <motion.div 
+                                               initial={{ opacity: 0, scale: 0.9, y: 10 }}
+                                               animate={{ opacity: 1, scale: 1, y: 0 }}
+                                               exit={{ opacity: 0, scale: 0.9, y: 10 }}
+                                               className="absolute bottom-12 right-0 bg-[#1a1a1a] border border-glass-border p-2 rounded-xl shadow-2xl z-[100] min-w-[160px] flex flex-col gap-1"
+                                            >
+                                               {COLUMNS.filter(c => c.id !== (leadNotes[lead.Email]?.status || "new")).map(col => (
+                                                  <button 
+                                                     key={col.id}
+                                                     onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        updateLeadNote(lead.Email, { status: col.id });
+                                                        setStageSelectorId(null);
+                                                     }}
+                                                     className="flex items-center justify-between px-3 py-2 hover:bg-white/5 rounded-lg text-[10px] font-black uppercase tracking-widest text-muted-foreground hover:text-white transition-all group"
+                                                  >
+                                                     {col.title}
+                                                     <CheckCircle2 size={12} className="opacity-0 group-hover:opacity-100 text-primary transition-opacity" />
+                                                  </button>
+                                               ))}
+                                            </motion.div>
+                                         )}
+                                      </AnimatePresence>
+                                   </div>
                                 </div>
                              </div>
                          </div>
@@ -170,6 +215,24 @@ export default function DealsPage() {
         } : null}
         defaultTab={followUpTab}
       />
+      <style jsx global>{`
+        .custom-scrollbar::-webkit-scrollbar {
+          height: 8px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: rgba(255, 255, 255, 0.05);
+          border-radius: 10px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: rgba(255, 255, 255, 0.2);
+          border-radius: 10px;
+          border: 2px solid transparent;
+          background-clip: content-box;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: rgba(255, 255, 255, 0.4);
+        }
+      `}</style>
     </div>
   );
 }

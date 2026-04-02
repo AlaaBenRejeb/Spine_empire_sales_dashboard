@@ -39,7 +39,7 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${inter.variable} ${outfit.variable} h-full antialiased`}>
       <head>
-        <title>Spine Empire</title>
+        <title>Setter Spine Empire</title>
       </head>
       <body>
         <ThemeProvider>

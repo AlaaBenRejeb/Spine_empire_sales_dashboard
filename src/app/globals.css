@@ -6,7 +6,7 @@
 }
 
 :root {
-  /* Obsidian Elite: Permanent Theme */
+  /* Obsidian Elite: Permanent Theme for Spine Empire Setter Intelligence */
   --background: 240 10% 2%;
   --foreground: 0 0% 98%;
   
@@ -29,47 +29,52 @@
   --glass-bg: rgba(255, 255, 255, 0.02);
   --glass-border: rgba(255, 255, 255, 0.05);
   --glass-glow: rgba(255, 255, 255, 0.05);
+  
+  --radius-xl: 2.5rem;
+  --radius-lg: 1.25rem;
 }
 
-body {
-  background-color: hsl(var(--background));
-  color: hsl(var(--foreground));
-  font-family: var(--font-sans);
-  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
-  overflow-x: hidden;
-  letter-spacing: -0.01em;
-  -webkit-font-smoothing: antialiased;
+@layer base {
+  body {
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+    font-family: var(--font-sans);
+    letter-spacing: -0.01em;
+    -webkit-font-smoothing: antialiased;
+    @apply selection:bg-white selection:text-black;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-heading);
+    font-weight: 700;
+    letter-spacing: -0.03em;
+  }
 }
 
-h1, h2, h3, h4, h5, h6 {
-  font-family: var(--font-heading);
-  font-weight: 700;
-  letter-spacing: -0.03em;
+@layer components {
+  .glass-card {
+    background-color: var(--glass-bg);
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-lg);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .glass-card:hover {
+    background-color: rgba(255, 255, 255, 0.04);
+    border-color: rgba(255, 255, 255, 0.1);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+    transform: translateY(-2px);
+  }
+
+  .text-gradient {
+    background: linear-gradient(to right, hsl(var(--foreground)), hsl(var(--foreground) / 0.7));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
 }
 
-/* Minimal Elite Component Styling */
-.glass-card {
-  background-color: var(--glass-bg);
-  backdrop-filter: blur(20px);
-  border: 1px solid var(--glass-border);
-  border-radius: 1.25rem;
-  transition: all 0.3s ease;
-}
-
-.glass-card:hover {
-  background-color: rgba(255, 255, 255, 0.04);
-  border-color: rgba(255, 255, 255, 0.1);
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
-}
-
-/* Typography Controls */
-.text-gradient {
-  background: linear-gradient(to right, hsl(var(--foreground)), hsl(var(--foreground) / 0.7));
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
-
-/* Elite Scrollbar - Ultra Minimal */
+/* Elite Scrollbar */
 ::-webkit-scrollbar {
   width: 4px;
 }
@@ -81,10 +86,10 @@ h1, h2, h3, h4, h5, h6 {
   border-radius: 10px;
 }
 
+.hide-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
 .hide-scrollbar::-webkit-scrollbar {
   display: none;
-}
-.hide-scrollbar {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
 }

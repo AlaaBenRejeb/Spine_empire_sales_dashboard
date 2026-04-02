@@ -1,7 +1,28 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { PhoneCall, Calendar, Target, TrendingUp, BarChart3, CheckSquare, Zap, Activity, MessageSquare, PhoneOutgoing, UserPlus, XCircle, CheckCircle2, RotateCcw } from "lucide-react";
+import { 
+  PhoneCall, 
+  Calendar, 
+  Target, 
+  TrendingUp, 
+  BarChart3, 
+  CheckSquare, 
+  Zap, 
+  Activity, 
+  MessageSquare, 
+  PhoneOutgoing, 
+  UserPlus, 
+  XCircle, 
+  CheckCircle2, 
+  RotateCcw,
+  LayoutDashboard,
+  ChevronRight,
+  Flame,
+  ArrowUpRight,
+  LogOut,
+  Settings
+} from "lucide-react";
 import LeadList from "@/components/LeadList";
 import PersonalTasks from "@/components/PersonalTasks";
 import AddLeadModal from "@/components/AddLeadModal";
@@ -30,7 +51,6 @@ function SetterDashboardContent() {
   const totalBooked = notes.filter(n => n.status === "booked").length;
   const totalLeads = 982;
 
-  // Sync noteText when activeLead changes
   useEffect(() => {
     if (activeLead) {
       setNoteText(leadNotes[activeLead.Email]?.comment || "");
@@ -48,224 +68,261 @@ function SetterDashboardContent() {
   };
 
   const stats = [
-    { label: "Target Market", value: totalLeads.toString(), icon: <Target />, color: "text-foreground", desc: "Total Pool" },
-    { label: "Dials Today", value: totalDials.toString(), icon: <PhoneCall />, color: "text-foreground", desc: "Outreach" },
-    { label: "Demos Booked", value: totalBooked.toString(), icon: <Calendar />, color: "text-foreground", desc: "Success" },
-    { label: "Win Opportunity", value: `$${(totalBooked * 4000).toLocaleString()}`, icon: <TrendingUp />, color: "text-foreground", desc: "Projected" }
+    { label: "Target Market", value: totalLeads.toString(), icon: <Target size={20} />, desc: "Total Pool" },
+    { label: "Dials Today", value: totalDials.toString(), icon: <PhoneCall size={20} />, desc: "Outreach" },
+    { label: "Demos Booked", value: totalBooked.toString(), icon: <Calendar size={20} />, desc: "Success" },
+    { label: "Win Opportunity", value: `$${(totalBooked * 4000 / 1000).toFixed(1)}K`, icon: <TrendingUp size={20} />, desc: "Projected" }
   ];
 
   return (
-    <div className="flex-1 flex flex-col gap-10 p-8 md:p-12 overflow-y-auto hide-scrollbar h-screen">
-      {/* Minimal Elite Header (No Theme Toggle) */}
-      <header className="flex flex-col md:flex-row justify-between items-center gap-6">
-        <div className="flex flex-col gap-1">
-          <motion.h1 
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="text-5xl md:text-6xl font-heading font-bold tracking-tight leading-none"
-          >
-            Welcome, Alex.
-          </motion.h1>
-          <p className="text-muted-foreground font-bold text-[10px] tracking-widest uppercase opacity-40 ml-1">Spine Empire Sales Engine</p>
-        </div>
-        
-        <div className="flex items-center gap-3">
-          <div className="glass-card px-8 py-5 rounded-xl flex items-center gap-4 border border-glass-border">
-            <Zap className="text-foreground" size={20} strokeWidth={2.5} />
-            <div className="flex flex-col">
-              <span className="text-[9px] font-bold uppercase tracking-widest opacity-40">Status</span>
-              <span className="text-xs font-bold tracking-widest uppercase">PRO ACTIVE</span>
-            </div>
+    <div className="flex h-screen bg-black text-white overflow-hidden font-sans select-none">
+      {/* Obsidian Elite Sidebar */}
+      <aside className="w-72 flex flex-col gap-10 h-screen p-10 border-r border-glass-border bg-black sticky top-0 transition-all z-50">
+        <div className="flex items-center gap-4 px-2">
+          <div className="w-12 h-12 bg-white text-black rounded-xl shadow-[0_0_20px_rgba(255,255,255,0.1)] flex items-center justify-center border border-white">
+            <Zap size={24} strokeWidth={2.5} />
+          </div>
+          <div className="flex flex-col">
+            <span className="text-xl font-heading font-bold tracking-tight uppercase leading-none text-white">Spine Empire</span>
+            <span className="text-[10px] font-black tracking-[0.3em] text-white/40 uppercase leading-none mt-1">Setter Engine</span>
           </div>
         </div>
-      </header>
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
-        {stats.map((stat, idx) => (
-          <motion.div 
-            key={idx}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: idx * 0.1 }}
-            className="glass-card p-8 flex flex-col gap-6"
-          >
-            <div className="flex justify-between items-start">
-               <div className="flex flex-col gap-1">
-                  <span className="text-muted-foreground text-[10px] font-bold tracking-widest uppercase leading-none opacity-60">{stat.label}</span>
-                  <div className="text-4xl font-heading font-bold tracking-tight">{stat.value}</div>
-               </div>
-               <div className="p-4 bg-secondary/50 rounded-xl border border-glass-border">
-                {stat.icon}
+        <nav className="flex flex-col gap-2 mt-4 flex-1">
+          {[
+            { name: "Terminal", icon: LayoutDashboard, active: true },
+            { name: "Dials", icon: PhoneCall, active: false },
+            { name: "Schedule", icon: Calendar, active: false },
+          ].map((item) => (
+            <div key={item.name} className={`p-4 rounded-xl flex items-center justify-between font-bold transition-all cursor-pointer group ${item.active ? "bg-white text-black shadow-lg" : "text-white/40 hover:bg-white/5 hover:text-white"}`}>
+              <div className="flex items-center gap-4">
+                <item.icon size={20} strokeWidth={item.active ? 2.5 : 2} />
+                <span className="text-[10px] uppercase tracking-widest font-black">{item.name}</span>
               </div>
+              {item.active && <div className="w-1.5 h-1.5 rounded-full bg-black" />}
             </div>
-            <div className="pt-4 border-t border-glass-border flex justify-between items-center text-[10px]">
-              <span className="text-muted-foreground font-bold uppercase tracking-widest opacity-40">{stat.desc}</span>
-              <div className="font-bold text-green-500 bg-green-500/5 px-3 py-1 rounded-full">+Active</div>
-            </div>
-          </motion.div>
-        ))}
-      </div>
+          ))}
+        </nav>
 
-      {/* Main CRM Workspace */}
-      <div className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-8 min-h-[700px] mb-20">
-        
-        {/* Lead List Column */}
-        <div className={`lg:col-span-2 glass-card p-10 flex flex-col overflow-hidden transition-all duration-500 ${activeLead ? 'lg:col-span-1' : 'lg:col-span-2'}`}>
-          <div className="flex justify-between items-center mb-10">
-            <h2 className="text-xl font-heading font-bold flex items-center gap-4 tracking-tight uppercase leading-none">
-              <BarChart3 className="text-foreground opacity-20" size={24} />
-              CRM TARGET LIST
-            </h2>
-            <button 
-              onClick={() => setIsAddLeadModalOpen(true)}
-              className="flex items-center gap-2 px-6 py-3 bg-green-500 text-black font-black text-[10px] uppercase tracking-widest rounded-xl hover:bg-green-400 transition-all shadow-[0_0_20px_rgba(34,197,94,0.2)] active:scale-95"
-            >
-              <UserPlus size={14} strokeWidth={3} />
-              QUICK ADD
-            </button>
+        <div className="pt-8 border-t border-glass-border flex flex-col gap-2">
+          <div className="p-4 rounded-xl flex items-center gap-4 font-black uppercase text-[10px] tracking-widest text-white/40 hover:bg-white/5 hover:text-white transition-all cursor-pointer">
+            <Settings size={18} /> Settings
           </div>
-          <div className="flex-1 overflow-hidden">
-            <LeadList />
+          <div className="p-4 rounded-xl flex items-center gap-4 font-black uppercase text-[10px] tracking-widest text-white/40 hover:bg-red-500/10 hover:text-red-500 transition-all cursor-pointer">
+            <LogOut size={18} /> Exit
           </div>
         </div>
+      </aside>
 
-        {/* Dynamic Outcome Logger (Alex's New Command Output) */}
-        <AnimatePresence>
-          {activeLead && (
-            <motion.div 
-              initial={{ opacity: 0, x: 50 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: 50 }}
-              className="lg:col-span-1 glass-card p-10 flex flex-col gap-8 bg-black/40 border-primary/20 shadow-2xl relative"
+      {/* Main Command Workspace */}
+      <div className="flex-1 flex flex-col overflow-y-auto hide-scrollbar custom-scrollbar bg-black">
+        <header className="p-12 pb-6 flex justify-between items-end sticky top-0 bg-black/80 backdrop-blur-md z-40 border-b border-glass-border">
+          <div className="flex flex-col gap-2">
+             <motion.h1 
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="text-6xl font-heading font-black tracking-tighter uppercase leading-none"
             >
-               <button onClick={() => setActiveLead(null)} className="absolute top-6 right-6 text-muted-foreground hover:text-white transition-colors">
-                 <XCircle size={24} />
-               </button>
+              Setter <span className="text-gradient">Empire.</span>
+            </motion.h1>
+            <p className="text-white/40 font-black text-[10px] tracking-[0.5em] uppercase ml-1 italic leading-none mt-1">Obsidian Elite Dialing Terminal</p>
+          </div>
+          
+          <div className="flex gap-4 items-center">
+            <div className="px-10 py-6 rounded-[2.5rem] border border-white/10 bg-white/5 flex flex-col items-center justify-center min-w-[160px]">
+               <span className="text-[8px] font-black uppercase tracking-widest mb-1 opacity-30 text-white">Status</span>
+               <span className="text-2xl font-heading font-black italic tracking-tighter leading-none text-white animate-pulse">ACTIVE</span>
+            </div>
+          </div>
+        </header>
 
-               <div className="flex flex-col gap-1">
-                  <span className="text-[10px] font-bold text-primary tracking-widest uppercase">ACTIVE OUTREACH</span>
-                  <h2 className="text-2xl font-heading font-black tracking-tight leading-none uppercase italic truncate">{activeLead["Practice Name"]}</h2>
-                  <span className="text-[10px] text-muted-foreground uppercase tracking-widest opacity-60 italic">{activeLead.City} • {activeLead.Phone}</span>
-               </div>
+        <div className="p-12 pt-12 flex flex-col gap-12">
+          {/* Stats Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+            {stats.map((stat, idx) => (
+              <motion.div 
+                key={idx}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: idx * 0.05 }}
+                className="glass-card p-10 flex flex-col gap-8 relative overflow-hidden group border-white/5 hover:border-white/20"
+              >
+                 <div className="flex justify-between items-start">
+                    <div className="flex flex-col gap-2">
+                       <span className="text-[10px] font-black uppercase tracking-[0.4em] opacity-30 text-white">{stat.label}</span>
+                       <div className="text-5xl font-heading font-black italic tracking-tighter leading-none text-white group-hover:text-gradient transition-all">{stat.value}</div>
+                    </div>
+                    <div className="p-5 text-white/10 group-hover:text-white transition-colors duration-500">
+                      {stat.icon}
+                    </div>
+                 </div>
+                 <div className="pt-6 border-t border-white/5 flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-white/30 italic">
+                    {stat.desc}
+                    <ArrowUpRight size={14} className="opacity-0 group-hover:opacity-100 transition-all text-white" />
+                 </div>
+              </motion.div>
+            ))}
+          </div>
 
-               {/* Log Status Buttons */}
-               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          {/* CRM Workspace */}
+          <div className="grid grid-cols-12 gap-12 min-h-[700px] mb-20">
+            {/* Lead Matrice */}
+            <div className={`${activeLead ? 'col-span-12 lg:col-span-5' : 'col-span-12 lg:col-span-8'} flex flex-col gap-8 transition-all duration-700`}>
+                <div className="flex justify-between items-center px-2">
+                  <h2 className="text-sm font-heading font-black uppercase tracking-[0.4em] text-white flex items-center gap-4 italic">
+                    <BarChart3 size={20} className="text-white/20" /> CRM Target Matrix
+                  </h2>
                   <button 
-                    onClick={() => handleStatusUpdate("booked")}
-                    className={`flex flex-col items-center justify-center gap-2 p-4 rounded-xl border transition-all ${leadNotes[activeLead.Email]?.status === 'booked' ? 'bg-green-500 text-white border-green-500' : 'bg-secondary/50 border-glass-border hover:border-green-500/50'}`}
+                    onClick={() => setIsAddLeadModalOpen(true)}
+                    className="px-8 py-5 bg-white text-black font-black text-[10px] uppercase tracking-widest rounded-3xl hover:shadow-[0_0_40px_rgba(255,255,255,0.1)] transition-all active:scale-95 flex items-center gap-3"
                   >
-                     <CheckCircle2 size={24} />
-                     <span className="text-[10px] font-black uppercase">BOOKED</span>
+                    <UserPlus size={14} strokeWidth={3} /> Quick Add Lead
                   </button>
-                  <button 
-                    onClick={() => handleStatusUpdate("called")}
-                    className={`flex flex-col items-center justify-center gap-2 p-4 rounded-xl border transition-all ${leadNotes[activeLead.Email]?.status === 'called' ? 'bg-yellow-500 text-white border-yellow-500' : 'bg-secondary/50 border-glass-border hover:border-yellow-500/50'}`}
-                  >
-                     <PhoneOutgoing size={24} />
-                     <span className="text-[10px] font-black uppercase">CALLED</span>
-                  </button>
-                  <button 
-                    onClick={() => handleStatusUpdate("ignored")}
-                    className={`flex flex-col items-center justify-center gap-2 p-4 rounded-xl border transition-all ${leadNotes[activeLead.Email]?.status === 'ignored' ? 'bg-red-500 text-white border-red-500' : 'bg-secondary/50 border-glass-border hover:border-red-500/50'}`}
-                  >
-                     <XCircle size={24} />
-                     <span className="text-[10px] font-black uppercase">IGNORE</span>
-                  </button>
-                  <button 
-                    onClick={() => {
-                        setNoteText("");
-                        updateLeadNote(activeLead.Email, { status: "new", comment: "" });
-                    }}
-                    className="flex flex-col items-center justify-center gap-2 p-4 rounded-xl border bg-secondary/50 border-glass-border hover:border-white transition-all text-muted-foreground hover:text-white"
-                  >
-                     <RotateCcw size={24} />
-                     <span className="text-[10px] font-black uppercase">RESET</span>
-                  </button>
-               </div>
+                </div>
+                <div className="glass-card p-0 flex-1 overflow-hidden transition-all duration-300">
+                  <LeadList />
+                </div>
+            </div>
 
+            {/* Outcome Engine (Logger) */}
+            <AnimatePresence mode="wait">
+              {activeLead && (
+                <motion.div 
+                  key={activeLead.Email}
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: 20 }}
+                  className="col-span-12 lg:col-span-7 flex flex-col gap-10 p-12 glass-card bg-white/5 border-white/10 relative overflow-hidden"
+                >
+                   <button onClick={() => setActiveLead(null)} className="absolute top-10 right-10 text-white/20 hover:text-white transition-colors duration-300">
+                     <XCircle size={32} strokeWidth={1.5} />
+                   </button>
 
-               {/* New High-Fidelity Scheduling Section */}
-               <div className="flex flex-col gap-4 p-6 bg-primary/5 rounded-2xl border border-primary/20 shadow-inner">
-                  <div className="flex justify-between items-center">
-                    <span className="text-[10px] font-black uppercase tracking-widest text-primary flex items-center gap-2">
-                      <Calendar size={14} /> Schedule Demo
-                    </span>
-                    <span className="text-[9px] font-bold opacity-30 uppercase tracking-widest italic">Optional for non-booked</span>
+                   <div className="flex flex-col gap-4">
+                      <span className="text-[12px] font-black text-white/30 tracking-[0.6em] uppercase flex items-center gap-3 italic">
+                        <Flame size={16} className="text-white" /> Active Intelligence Node
+                      </span>
+                      <h2 className="text-6xl font-heading font-black tracking-tighter leading-none uppercase italic truncate text-white">{activeLead["Practice Name"]}</h2>
+                      <p className="text-[12px] text-white/20 uppercase tracking-[0.4em] font-black">{activeLead.City} • {activeLead.Phone}</p>
+                   </div>
+
+                   {/* Status Matrix */}
+                   <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                      {[
+                        { id: 'booked', label: 'BOOKED', icon: CheckCircle2, color: 'bg-white text-black' },
+                        { id: 'called', label: 'CALLED', icon: PhoneOutgoing, color: 'bg-white/10 text-white' },
+                        { id: 'ignored', label: 'IGNORE', icon: XCircle, color: 'bg-white/5 text-white/40' },
+                      ].map((btn) => (
+                        <button 
+                          key={btn.id}
+                          onClick={() => handleStatusUpdate(btn.id)}
+                          className={`flex flex-col items-center justify-center gap-3 p-8 rounded-3xl border transition-all duration-500 overflow-hidden group ${leadNotes[activeLead.Email]?.status === btn.id ? btn.color + ' border-transparent shadow-[0_0_30px_rgba(255,255,255,0.15)]' : 'bg-transparent border-white/5 hover:border-white/20'}`}
+                        >
+                           <btn.icon size={28} strokeWidth={3} className="group-hover:scale-110 transition-transform" />
+                           <span className="text-[10px] font-black uppercase tracking-[0.2em]">{btn.label}</span>
+                        </button>
+                      ))}
+                      <button 
+                        onClick={() => {
+                            setNoteText("");
+                            updateLeadNote(activeLead.Email, { status: "new", comment: "" });
+                        }}
+                        className="flex flex-col items-center justify-center gap-3 p-8 rounded-3xl border border-white/5 bg-transparent hover:border-red-500/50 hover:bg-red-500/5 transition-all text-white/20 hover:text-red-500 duration-500 group"
+                      >
+                         <RotateCcw size={28} strokeWidth={2} className="group-hover:rotate-180 transition-transform" />
+                         <span className="text-[10px] font-black uppercase tracking-[0.2em]">RESET</span>
+                      </button>
+                   </div>
+
+                   {/* Scheduler High-Fidelity */}
+                   <div className="flex flex-col gap-6 p-10 glass-card bg-white text-black border-none shadow-[0_0_60px_rgba(255,255,255,0.05)]">
+                      <div className="flex justify-between items-center">
+                        <span className="text-[12px] font-black uppercase tracking-widest text-black flex items-center gap-4 italic font-heading">
+                          <Calendar size={20} strokeWidth={3} /> SYSTEM SCHEDULER
+                        </span>
+                        <div className="w-2 h-2 rounded-full bg-black animate-ping" />
+                      </div>
+                      
+                      <div className="grid grid-cols-2 gap-8">
+                         <div className="flex flex-col gap-3">
+                            <span className="text-[10px] font-black uppercase tracking-widest opacity-40 ml-1">Appointment Date</span>
+                            <input 
+                              type="date" 
+                              value={scheduledDate}
+                              onChange={(e) => setScheduledDate(e.target.value)}
+                              className="bg-black/5 border border-black/5 focus:border-black p-6 rounded-2xl text-sm font-black text-black outline-none transition-all w-full font-sans"
+                            />
+                         </div>
+                         <div className="flex flex-col gap-3">
+                            <span className="text-[10px] font-black uppercase tracking-widest opacity-40 ml-1">Time Block</span>
+                            <input 
+                              type="time" 
+                              value={scheduledTime}
+                              onChange={(e) => setScheduledTime(e.target.value)}
+                              className="bg-black/5 border border-black/5 focus:border-black p-6 rounded-2xl text-sm font-black text-black outline-none transition-all w-full font-sans"
+                            />
+                         </div>
+                      </div>
+                   </div>
+
+                   {/* Interaction Matrix */}
+                   <div className="flex flex-col gap-6 flex-1 min-h-[250px]">
+                      <div className="flex justify-between items-end px-2">
+                        <span className="text-[12px] font-black uppercase tracking-[0.4em] text-white/30 italic">Intelligence Log</span>
+                        <MessageSquare size={16} className="text-white/10" />
+                      </div>
+                      <textarea 
+                        value={noteText}
+                        onChange={(e) => setNoteText(e.target.value)}
+                        onBlur={() => handleStatusUpdate(leadNotes[activeLead.Email]?.status || "called")}
+                        placeholder="LOG OBJECTIONS, GATEKEEPER INTEL, OR NEXUS POINTS..."
+                        className="flex-1 bg-white/5 border border-white/5 p-10 rounded-[2.5rem] text-lg font-bold text-white placeholder:italic placeholder:text-white/10 focus:border-white/20 outline-none transition-all resize-none shadow-inner custom-scrollbar font-sans"
+                      />
+                   </div>
+
+                   <div className="p-10 glass-card bg-emerald-500/5 border-emerald-500/10 flex items-center justify-between group">
+                      <div className="flex flex-col gap-1">
+                        <span className="text-[10px] font-black uppercase tracking-[0.3em] text-emerald-400">Persistence Engine</span>
+                        <span className="text-sm font-heading font-black uppercase italic text-white/80">REAL-TIME NEXUS SYNC ACTIVE</span>
+                      </div>
+                      <Zap size={24} className="text-emerald-400 animate-pulse group-hover:scale-125 transition-transform" />
+                   </div>
+                </motion.div>
+              )}
+
+              {/* Today's Stats & Tasks */}
+              {!activeLead && (
+                <motion.div 
+                  key="tasks"
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  className="col-span-12 lg:col-span-4 flex flex-col gap-10"
+                >
+                  <div className="glass-card p-12 flex flex-col overflow-hidden h-full">
+                      <div className="flex justify-between items-center mb-10">
+                        <h2 className="text-sm font-heading font-black uppercase tracking-[0.4em] text-white flex items-center gap-4 italic">
+                          <CheckSquare size={20} className="text-white/20" /> Operations
+                        </h2>
+                      </div>
+                      <div className="flex-1 overflow-hidden transition-all custom-scrollbar">
+                        <PersonalTasks theme="dark" />
+                      </div>
                   </div>
                   
-                  <div className="grid grid-cols-2 gap-4">
-                     <div className="flex flex-col gap-2">
-                        <span className="text-[9px] font-bold uppercase tracking-widest opacity-40 ml-1">Date</span>
-                        <input 
-                          type="date" 
-                          value={scheduledDate}
-                          onChange={(e) => setScheduledDate(e.target.value)}
-                          className="bg-black/50 border border-white/10 focus:border-primary p-4 rounded-xl text-xs font-bold text-white outline-none transition-all w-full leading-none"
-                        />
-                     </div>
-                     <div className="flex flex-col gap-2">
-                        <span className="text-[9px] font-bold uppercase tracking-widest opacity-40 ml-1">Time</span>
-                        <input 
-                          type="time" 
-                          value={scheduledTime}
-                          onChange={(e) => setScheduledTime(e.target.value)}
-                          className="bg-black/50 border border-white/10 focus:border-primary p-4 rounded-xl text-xs font-bold text-white outline-none transition-all w-full leading-none"
-                        />
-                     </div>
+                  <div className="glass-card p-10 bg-white text-black flex items-center justify-between border-none shadow-[0_0_50px_rgba(255,255,255,0.05)]">
+                      <div className="flex flex-col gap-1">
+                        <span className="text-[10px] font-black uppercase tracking-widest opacity-40 mb-1">Session Target</span>
+                        <span className="text-2xl font-heading font-black uppercase italic tracking-tighter leading-none">100 DIALS GOAL</span>
+                      </div>
+                      <div className="w-12 h-12 rounded-full border-2 border-black flex items-center justify-center">
+                        <Activity size={24} className="text-black" />
+                      </div>
                   </div>
-               </div>
-
-               {/* Interaction Notes */}
-               <div className="flex flex-col gap-4 flex-1">
-                  <div className="flex justify-between items-end">
-                    <span className="text-[10px] font-black uppercase tracking-widest opacity-40">Interaction Notes</span>
-                    <MessageSquare size={14} className="opacity-20" />
-                  </div>
-                  <textarea 
-                    value={noteText}
-                    onChange={(e) => setNoteText(e.target.value)}
-                    onBlur={() => handleStatusUpdate(leadNotes[activeLead.Email]?.status || "called")}
-                    placeholder="Log gatekeeper feedback, objections, or next steps..."
-                    className="flex-1 bg-black/50 border-2 border-glass-border p-6 rounded-2xl text-sm font-bold placeholder:italic placeholder:opacity-30 focus:border-primary outline-none transition-all resize-none min-h-[150px]"
-                  />
-               </div>
-
-               <div className="p-6 bg-secondary/30 rounded-2xl border border-glass-border flex items-center justify-between">
-                  <div className="flex flex-col">
-                    <span className="text-[9px] font-bold uppercase tracking-widest opacity-40">Persistence</span>
-                    <span className="text-[10px] font-bold uppercase tracking-widest">LOCAL CRM SYNC ACTIVE</span>
-                  </div>
-                  <Zap size={18} className="text-primary animate-pulse" />
-               </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Today's Wins Column (Hidden if Outcome Logger is active on small screens, or always secondary) */}
-        {!activeLead && (
-          <div className="lg:col-span-1 flex flex-col gap-8">
-            <div className="glass-card p-10 flex flex-col overflow-hidden h-full">
-                <div className="flex justify-between items-center mb-10">
-                  <h2 className="text-xl font-heading font-bold flex items-center gap-4 tracking-tight uppercase leading-none">
-                    <CheckSquare className="text-foreground opacity-20" size={24} />
-                    DAILY WINS
-                  </h2>
-                </div>
-                <div className="flex-1 overflow-hidden transition-all">
-                  <PersonalTasks theme="dark" />
-                </div>
-            </div>
-            
-            <div className="glass-card p-8 bg-secondary/30 flex items-center justify-between border-dashed border-2">
-                <div className="flex flex-col">
-                  <span className="text-[10px] font-bold uppercase tracking-widest opacity-40 mb-1">Session Goal</span>
-                  <span className="text-sm font-bold uppercase tracking-widest leading-none">70 DIALS COMPLETE</span>
-                </div>
-                <Activity size={24} className="text-muted-foreground opacity-20" />
-            </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
-        )}
+        </div>
       </div>
       
       <AddLeadModal 
@@ -273,16 +330,6 @@ function SetterDashboardContent() {
         onClose={() => setIsAddLeadModalOpen(false)} 
       />
     </div>
-  );
-}
-
-function FinalDashboardWrapper() {
-  const [isAddLeadModalOpen, setIsAddLeadModalOpen] = useState(false);
-  
-  return (
-    <>
-      <SetterDashboardContent />
-    </>
   );
 }
 
@@ -304,17 +351,14 @@ export default function Dashboard() {
   };
 
   if (isChecking) {
-    return <div className="h-screen w-full bg-[#0a0a0a]" />;
+    return <div className="h-screen w-full bg-black flex items-center justify-center">
+      <Zap className="text-white animate-pulse" size={48} />
+    </div>;
   }
 
   if (!isAuthenticated) {
     return <LoginScreen onLogin={handleLoginSuccess} />;
   }
 
-  // Use a wrapper to handle the global modal state if needed, or just put it here
-  return (
-    <>
-      <SetterDashboardContent />
-    </>
-  );
+  return <SetterDashboardContent />;
 }

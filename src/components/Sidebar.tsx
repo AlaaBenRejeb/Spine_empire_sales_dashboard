@@ -25,7 +25,7 @@ export default function Sidebar() {
         </div>
         <div className="flex flex-col">
           <span className="text-xl font-heading font-bold tracking-tight uppercase leading-none">Spine Empire</span>
-          <span className="text-[10px] font-bold tracking-[0.2em] opacity-40 uppercase">Outreach Elite</span>
+          <span className="text-[10px] font-bold tracking-[0.2em] opacity-40 uppercase">Setter Spine Empire</span>
         </div>
       </div>
 
