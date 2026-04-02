@@ -41,11 +41,11 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
     DealValue: lead.metadata?.deal_value || 4000,
   });
 
+  // 1. Initial Data Load & Auth
   useEffect(() => {
     const initCRM = async () => {
       setLoading(true);
       
-      // 0. Get Auth Session & Role
       const { data: { session } } = await supabase.auth.getSession();
       let currentUser = null;
       if (session?.user) {
@@ -59,7 +59,7 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
         setUserRole(profile?.role || 'setter');
       }
 
-      // 0.1 Fetch Assigned Closer (Pairing Matrix #1)
+      // Initial fetch of assigned closer
       if (currentUser) {
         const { data: mapping } = await supabase
           .from('setter_closer_mapping')
@@ -69,23 +69,13 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
         if (mapping?.closer_id) setAssignedCloserId(mapping.closer_id);
       }
 
-      // 1. Load local notes for immediate UI responsiveness
       const saved = localStorage.getItem("spine-empire-lead-notes");
       if (saved) setLeadNotes(JSON.parse(saved));
 
-      // 2. Sync with Supabase
       try {
-        let query = supabase.from('leads').select('*');
-        
-        // Removed setter_id filter to allow global lead visibility for Setters
-        // if (session?.user && (!userRole || userRole === 'setter')) {
-        //   query = query.eq('setter_id', session.user.id);
-        // }
+        const { data: dbLeads, error } = await supabase.from('leads').select('*');
 
-        const { data: dbLeads, error } = await query;
-
-        if (!error && (dbLeads && dbLeads.length > 0)) {
-          // Merge DB statuses into local notes
+        if (!error && dbLeads && dbLeads.length > 0) {
           const syncedNotes: Record<string, any> = {};
           const syncedLeads: any[] = dbLeads.map(lead => ({
             id: lead.id,
@@ -113,9 +103,8 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
           });
           setLeadNotes(prev => ({ ...prev, ...syncedNotes }));
           setLeads(syncedLeads);
-        } else if (!error && (dbLeads && dbLeads.length === 0)) {
-          // SEED DATABASE: If empty, push the 982 targets from leads.json
-          console.log("Seeding Supabase with master target list...");
+        } else if (!error && dbLeads?.length === 0) {
+          // Seeding if database is empty
           const batch = (leadsData as any[]).slice(0, 100).map(l => ({
             business_name: l["Practice Name"],
             contact_name: `${l["First Name"]} ${l["Last Name"] || ""}`,
@@ -130,7 +119,6 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
               google_reviews: l["Google Reviews"]
             }
           }));
-
           await supabase.from('leads').insert(batch);
         }
       } catch (err) {
@@ -142,14 +130,10 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
 
     initCRM();
 
-    // 3. Real-time Subscription
+    // 2. Real-time Lead Sync
     const channel = supabase
       .channel('leads-setter-sync')
-      .on('postgres_changes', {
-        event: '*',
-        schema: 'public',
-        table: 'leads'
-      }, (payload) => {
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'leads' }, (payload) => {
         const updated = (payload.eventType === 'DELETE' ? payload.old : payload.new) as any;
         
         if (payload.eventType === 'DELETE') {
@@ -186,11 +170,31 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
+  // 3. Real-time Flow Matrix Mapping Sync
+  useEffect(() => {
+    if (!user?.id) return;
+
+    const mappingChannel = supabase.channel(`mapping-${user.id}`)
+      .on('postgres_changes', { 
+        event: '*', 
+        schema: 'public', 
+        table: 'setter_closer_mapping',
+        filter: `setter_id=eq.${user.id}`
+      }, (payload: any) => {
+        console.log("📡 Flow Matrix Update:", payload);
+        const newCloserId = payload.new?.closer_id || null;
+        setAssignedCloserId(newCloserId);
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(mappingChannel);
+    };
+  }, [user?.id]);
+
   const updateLeadNote = async (email: string, updates: any) => {
-    // 1. Get the internal Supabase ID if we have it
     const leadId = leadNotes[email]?.id;
 
-    // 2. Optimistic UI Update
     const updated = { 
       ...leadNotes, 
       [email]: { ...(leadNotes[email] || { status: "new", comment: "" }), ...updates } 
@@ -198,7 +202,6 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
     setLeadNotes(updated);
     localStorage.setItem("spine-empire-lead-notes", JSON.stringify(updated));
 
-    // 3. Sync to Supabase
     try {
       let query = supabase.from('leads').update({ 
         status: updates.status,
@@ -210,7 +213,6 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
         }
       });
 
-      // Use internal ID if available, fallback to email filter
       if (leadId) {
         query = query.eq('id', leadId);
       } else {
@@ -219,21 +221,33 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
 
       const { data, error } = await query.select();
       
-      // 0. Automatically assign closer if status is booked (Flow Matrix #1)
-      if (!error && updates.status === 'booked' && assignedCloserId) {
-        await supabase
-          .from('leads')
-          .update({ closer_id: assignedCloserId })
-          .eq('id', leadId || data?.[0]?.id);
-        console.log(`📡 Flow Matrix: Automatically routed to Closer ${assignedCloserId}`);
+      // Automatic Handoff to Closer
+      if (!error && updates.status === 'booked') {
+        let closerId = assignedCloserId;
+        
+        if (!closerId && user) {
+          const { data: mapping } = await supabase
+            .from('setter_closer_mapping')
+            .select('closer_id')
+            .eq('setter_id', user.id)
+            .single();
+          closerId = mapping?.closer_id;
+        }
+
+        if (closerId) {
+          const targetId = leadId || data?.[0]?.id;
+          if (targetId) {
+            await supabase
+              .from('leads')
+              .update({ closer_id: closerId })
+              .eq('id', targetId);
+            console.log(`📡 Flow Matrix: Automatically routed to Closer ${closerId}`);
+          }
+        }
       }
         
       if (error) {
         console.error("❌ Supabase update failed:", error.message);
-      } else if (!data || data.length === 0) {
-        console.warn(`⚠️ No rows updated for email/id: ${email} (ID: ${leadId})`);
-      } else {
-        console.log(`✅ Synchronized ${email} (ID: ${leadId}) to ${updates.status}`);
       }
     } catch (err) {
       console.error("❌ Unexpected error during sync:", err);
@@ -262,7 +276,6 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
         .select();
 
       if (!error && data) {
-        // Update local state so it appears in the list
         const newLeadRaw = data[0];
         const newLeadTransformed = {
           "Practice Name": newLeadRaw.business_name,
@@ -283,8 +296,6 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
           ...prev, 
           [newLeadTransformed.Email]: { status: 'new', comment: "", deal_value: 7500 } 
         }));
-      } else if (error) {
-        console.error("Manual lead insert failed:", error);
       }
     } catch (err) {
       console.error("Unexpected error adding lead:", err);
