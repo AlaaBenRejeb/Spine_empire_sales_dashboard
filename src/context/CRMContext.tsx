@@ -239,6 +239,18 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
       }
 
       const { data, error } = await query.select();
+
+      if (error) {
+        console.error(`❌ DB Sync Error [${updates.status}]:`, error.message, error.code, error.details);
+        // Fallback: If DB rejection, don't keep it in local storage if we want persistence to be the source of truth
+        // But for now we allow local update for UX while DB is fixed
+      } else {
+        if (data && data.length > 0) {
+          console.log(`✅ DB Status Synced: ${email} -> ${updates.status}`);
+        } else {
+          console.warn(`⚠️ No rows updated for ${email}. Checked ID: ${leadId}`);
+        }
+      }
       
       // Automatic Handoff to Closer
       if (!error && updates.status === 'booked') {
