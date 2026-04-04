@@ -4,7 +4,6 @@ import React, { createContext, useContext, useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 
 const supabase = createClient();
-import leadsData from "@/data/leads.json";
 
 interface CRMContextType {
   activeLead: any;
@@ -79,7 +78,11 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
       try {
         const { data: dbLeads, error } = await supabase.from('leads').select('*');
 
-        if (!error && dbLeads && dbLeads.length > 0) {
+        console.log('📡 Leads query:', { count: dbLeads?.length, error: error?.message });
+
+        if (error) {
+          console.error('❌ Leads fetch failed:', error.message, error.code);
+        } else if (dbLeads && dbLeads.length > 0) {
           const syncedNotes: Record<string, any> = {};
           const syncedLeads: any[] = dbLeads.map((lead: any) => ({
             id: lead.id,
@@ -98,32 +101,15 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
 
           dbLeads.forEach((lead: any) => {
             const key = lead.metadata?.email || lead.id;
-            syncedNotes[key] = { 
+            syncedNotes[key] = {
               id: lead.id,
-              status: lead.status, 
+              status: lead.status,
               comment: lead.metadata?.comment || "",
               deal_value: lead.metadata?.deal_value || 6500
             };
           });
           setLeadNotes(prev => ({ ...prev, ...syncedNotes }));
           setLeads(syncedLeads);
-        } else if (!error && dbLeads?.length === 0) {
-          // Seeding if database is empty
-          const batch = (leadsData as any[]).slice(0, 100).map(l => ({
-            business_name: l["Practice Name"],
-            contact_name: `${l["First Name"]} ${l["Last Name"] || ""}`,
-            phone: l.Phone,
-            revenue_range: l["Revenue Range"] || "Unknown",
-            main_challenge: l["Main Challenge"] || "",
-            status: 'new',
-            metadata: { 
-              email: l.Email, 
-              city: l.City, 
-              state: l.State,
-              google_reviews: l["Google Reviews"]
-            }
-          }));
-          await supabase.from('leads').insert(batch);
         }
       } catch (err) {
         console.error("Setter sync failed:", err);
