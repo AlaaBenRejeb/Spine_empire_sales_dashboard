@@ -29,7 +29,6 @@ import PersonalTasks from "@/components/PersonalTasks";
 import AddLeadModal from "@/components/AddLeadModal";
 import { useCRM } from "@/context/CRMContext";
 import { useState, useEffect } from "react";
-import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/context/AuthContext";
 
 function formatTime12Hour(time24: string) {
@@ -42,28 +41,17 @@ function formatTime12Hour(time24: string) {
 }
 
 export default function SetterDashboardContent() {
-  const { activeLead, setActiveLead, leadNotes, updateLeadNote } = useCRM();
+  const { activeLead, setActiveLead, leadNotes, updateLeadNote, assignedCloserName, leads } = useCRM();
   const { loading } = useAuth();
-  const [supabase] = useState(() => createClient());
   const [noteText, setNoteText] = useState("");
   const [scheduledDate, setScheduledDate] = useState(new Date().toISOString().split('T')[0]);
   const [scheduledTime, setScheduledTime] = useState("09:00");
   const [isAddLeadModalOpen, setIsAddLeadModalOpen] = useState(false);
-  const [totalLeads, setTotalLeads] = useState(0);
 
+  const totalLeads = leads.length;
   const notes = Object.values(leadNotes);
   const totalDials = notes.filter(n => (n as any).status !== "new").length;
   const totalBooked = notes.filter(n => (n as any).status === "booked").length;
-
-  useEffect(() => {
-    const fetchLeadCount = async () => {
-      const { count } = await supabase
-        .from('leads')
-        .select('*', { count: 'exact', head: true });
-      if (count !== null) setTotalLeads(count);
-    };
-    fetchLeadCount();
-  }, [supabase]);
 
   useEffect(() => {
     if (activeLead) {
@@ -85,7 +73,7 @@ export default function SetterDashboardContent() {
     { label: "Target Market", value: totalLeads.toLocaleString(), icon: <Target size={18} />, desc: "Total Pool" },
     { label: "Dials Today", value: totalDials.toLocaleString(), icon: <PhoneCall size={18} />, desc: "Outreach" },
     { label: "Demos Booked", value: totalBooked.toLocaleString(), icon: <Calendar size={18} />, desc: "Success" },
-    { label: "Win Opportunity", value: `$${(totalBooked * 7500).toLocaleString()}`, icon: <TrendingUp size={18} />, desc: "Projected" }
+    { label: "Win Opportunity", value: `$${(totalBooked * 6500).toLocaleString()}`, icon: <TrendingUp size={18} />, desc: "Projected" }
   ];
 
   if (loading) return null;
@@ -111,6 +99,18 @@ export default function SetterDashboardContent() {
           >
             <UserPlus size={12} strokeWidth={3} /> Add Lead
           </button>
+          <div className="h-8 w-[1px] bg-white/10 mx-1" />
+          
+          {assignedCloserName && (
+            <div className="flex flex-col text-right">
+              <div className="text-[8px] font-black uppercase text-emerald-500/60 tracking-widest leading-none">Flow Target</div>
+              <div className="flex items-center justify-end gap-1 mt-1">
+                <Users size={10} className="text-emerald-500" />
+                <span className="text-[9px] font-black text-white uppercase italic tracking-tighter">Closer: {assignedCloserName}</span>
+              </div>
+            </div>
+          )}
+
           <div className="h-8 w-[1px] bg-white/10 mx-1" />
           <div className="text-right">
             <div className="text-[8px] font-black uppercase text-white/20 tracking-widest leading-none">System Status</div>
