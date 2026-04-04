@@ -98,7 +98,9 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
               id: lead.id,
               status: lead.status,
               comment: lead.metadata?.comment || "",
-              deal_value: lead.metadata?.deal_value || 6500
+              deal_value: lead.metadata?.deal_value || 6500,
+              synced_at: lead.metadata?.synced_at,
+              setter_id: lead.setter_id
             };
           });
           setLeadNotes(prev => ({ ...prev, ...syncedNotes }));
@@ -110,6 +112,17 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
         setLoading(false);
       }
     };
+
+    // Fail-safe: Explicitly check session if onAuthStateChange is delayed
+    const syncSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user && !fetchedRef.current) {
+        fetchedRef.current = true;
+        setUser(session.user);
+        fetchLeads(session.user);
+      }
+    };
+    syncSession();
 
     // Subscribe to auth state — fires with INITIAL_SESSION on load, no competing getSession()
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event: any, session: any) => {
@@ -143,7 +156,9 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
           [email]: {
             status: updated.status,
             comment: updated.metadata?.comment || "",
-            deal_value: updated.metadata?.deal_value || 6500
+            deal_value: updated.metadata?.deal_value || 6500,
+            synced_at: updated.metadata?.synced_at,
+            setter_id: updated.setter_id
           }
         }));
 

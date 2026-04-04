@@ -41,7 +41,7 @@ function formatTime12Hour(time24: string) {
 }
 
 export default function SetterDashboardContent() {
-  const { activeLead, setActiveLead, leadNotes, updateLeadNote, assignedCloserName, leads, totalLeadsCount } = useCRM();
+  const { activeLead, setActiveLead, leadNotes, updateLeadNote, assignedCloserName, leads, totalLeadsCount, user } = useCRM();
   const { loading } = useAuth();
   const [noteText, setNoteText] = useState("");
   const [scheduledDate, setScheduledDate] = useState(new Date().toISOString().split('T')[0]);
@@ -49,9 +49,18 @@ export default function SetterDashboardContent() {
   const [isAddLeadModalOpen, setIsAddLeadModalOpen] = useState(false);
 
   const totalLeads = totalLeadsCount;
+  const today = new Date().toISOString().split('T')[0];
   const notes = Object.values(leadNotes);
-  const totalDials = notes.filter(n => (n as any).status !== "new").length;
-  const totalBooked = notes.filter(n => (n as any).status === "booked").length;
+  
+  const todayStats = notes.filter((n: any) => {
+    if (!n.synced_at || !user?.id) return false;
+    const isToday = n.synced_at.startsWith(today);
+    const isCurrentUser = n.setter_id === user.id;
+    return isToday && isCurrentUser;
+  });
+
+  const totalDials = todayStats.filter(n => (n as any).status !== "new" && (n as any).status !== "ignored").length;
+  const totalBooked = todayStats.filter(n => (n as any).status === "booked").length;
 
   useEffect(() => {
     if (activeLead) {

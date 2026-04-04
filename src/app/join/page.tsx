@@ -82,7 +82,7 @@ export default function JoinPage() {
               {error}
             </div>
             <button 
-              onClick={() => window.location.href = "https://spineempire.com"}
+              onClick={() => window.location.href = window.location.origin}
               className="w-full py-5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all"
             >
               Return to Site
