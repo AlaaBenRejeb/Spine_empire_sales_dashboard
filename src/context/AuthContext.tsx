@@ -80,7 +80,7 @@ export function AuthProvider({
     const loadingTimeout = setTimeout(() => {
       setLoading(false);
       console.warn("Auth synchronization timeout: Forcing interface load.");
-    }, 5000);
+    }, 15000);
 
     const initAuth = async () => {
       try {
