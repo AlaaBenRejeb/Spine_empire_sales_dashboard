@@ -79,9 +79,9 @@ export default function SetterDashboardContent() {
   if (loading) return null;
 
   return (
-    <main className="flex-1 bg-[#050505] h-screen p-4 overflow-hidden flex flex-col gap-4">
+    <main className="flex-1 bg-[#050505] min-h-screen lg:h-screen p-4 md:p-6 lg:p-4 overflow-y-auto lg:overflow-hidden flex flex-col gap-4">
       {/* Header Section - Ultra Compact */}
-      <div className="flex justify-between items-center bg-white/5 border border-white/10 p-4 rounded-xl backdrop-blur-md shrink-0">
+      <div className="hidden lg:flex justify-between items-center bg-white/5 border border-white/10 p-4 rounded-xl backdrop-blur-md shrink-0">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center p-1.5">
             <img src="/logo.png" alt="Empire" className="w-full h-full object-contain" />
@@ -123,7 +123,7 @@ export default function SetterDashboardContent() {
       </div>
 
       {/* Stats Grid - Ultra Compact */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-3 shrink-0">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 shrink-0">
         {stats.map((stat, i) => (
           <motion.div
             key={stat.label}
@@ -138,7 +138,7 @@ export default function SetterDashboardContent() {
               </div>
               <span className="text-[8px] font-black uppercase tracking-widest text-white/10">{stat.desc}</span>
             </div>
-            <div className="text-xl font-black text-white italic tracking-tighter leading-none">{stat.value}</div>
+            <div className="text-lg md:text-xl font-black text-white italic tracking-tighter leading-none">{stat.value}</div>
             <div className="text-[8px] font-bold uppercase text-white/30 mt-1 tracking-wider">{stat.label}</div>
           </motion.div>
         ))}
@@ -180,7 +180,7 @@ export default function SetterDashboardContent() {
                      <span className="text-[8px] font-black text-emerald-500/60 tracking-[0.4em] uppercase flex items-center gap-2 italic">
                        <Flame size={10} className="text-emerald-500" /> Active Intel Node
                      </span>
-                     <h2 className="text-3xl font-black tracking-tighter leading-tight uppercase italic text-white truncate pr-10">{activeLead["Practice Name"]}</h2>
+                     <h2 className="text-2xl md:text-3xl font-black tracking-tighter leading-tight uppercase italic text-white truncate pr-10">{activeLead["Practice Name"]}</h2>
                      <p className="text-[9px] text-white/20 uppercase tracking-[0.3em] font-bold">{activeLead.City} • {activeLead.Phone}</p>
                    </div>
 

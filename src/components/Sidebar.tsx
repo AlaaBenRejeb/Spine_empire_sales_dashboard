@@ -6,7 +6,12 @@ import { LayoutDashboard, PhoneCall, Calendar, BarChart3, Settings, LogOut, Brie
 import { motion } from "framer-motion";
 import { useAuth } from "@/context/AuthContext";
 
-export default function Sidebar() {
+interface SidebarProps {
+  isOpen?: boolean;
+  onClose?: () => void;
+}
+
+export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   const pathname = usePathname();
   const { profile, signOut } = useAuth();
 
@@ -19,7 +24,7 @@ export default function Sidebar() {
   ];
 
   return (
-    <aside className="hidden lg:flex w-64 flex-shrink-0 flex-col gap-6 h-screen sticky top-0 p-6 border-r border-glass-border bg-background transition-all duration-300 overflow-hidden shadow-2xl z-40">
+    <aside className={`fixed lg:sticky top-0 left-0 w-64 flex flex-col gap-6 h-screen p-6 border-r border-glass-border bg-background transition-all duration-300 overflow-hidden shadow-2xl z-50 ${isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}`}>
       <div className="flex items-center gap-3 px-1 cursor-pointer">
         <div className="w-10 h-10 bg-black text-white dark:bg-white dark:text-black rounded-lg shadow-sm flex items-center justify-center border border-black transition-all">
           <Zap size={20} strokeWidth={2.5} />

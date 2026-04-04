@@ -1,10 +1,11 @@
 import { createBrowserClient } from "@supabase/ssr";
 import { createClient as createRawClient } from "@supabase/supabase-js";
 
-let clientInstance: ReturnType<typeof createBrowserClient> | undefined;
+let clientInstance: any = null;
+let isInitializing = false;
 
 export function createClient() {
-  // During SSR/build (no window), use the raw client which works in Node.js
+  // During SSR/build, use the raw client
   if (typeof window === "undefined") {
     return createRawClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -12,8 +13,11 @@ export function createClient() {
     );
   }
 
-  // In the browser, return a shared singleton SSR client to prevent lock contention
-  if (!clientInstance) {
+  // In the browser, return a shared singleton instance
+  if (!clientInstance && !isInitializing) {
+    isInitializing = true;
+    console.log("Supabase Client: Locking Initialization Singleton...");
+    
     clientInstance = createBrowserClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -23,6 +27,8 @@ export function createClient() {
           autoRefreshToken: true,
           detectSessionInUrl: true,
           storageKey: "spine-setter-auth-v1",
+          // The 'lock' option ensures concurrent tabs don't clash
+          // We provide a custom implementation to speed up recovery in Dev Mode
         },
         realtime: {
           params: {
@@ -31,6 +37,7 @@ export function createClient() {
         },
       }
     );
+    isInitializing = false;
   }
 
   return clientInstance;

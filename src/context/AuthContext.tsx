@@ -151,15 +151,27 @@ export function AuthProvider({
     };
   }, [supabase]);
 
-  // Strategic Failsafe: Infinite Sync Protection (Shortened to 20s for better DX)
+  // Strategic Failsafe: Infinite Sync Protection (Adaptive to Lock Contention)
   useEffect(() => {
     if (!loading) return;
+
+    // Detect if the client is currently "Locked" waiting for storage access
+    // This is common in multi-tab development environments
+    const checkLockStatus = () => {
+      const isCurrentlyLocked = typeof window !== 'undefined' && 
+        document.documentElement.innerHTML.includes('Lock "lock:spine-setter-auth-v1" was not released');
+      return isCurrentlyLocked;
+    };
+
+    const timeoutDuration = checkLockStatus() ? 30000 : 20000; // Extend if lock contention detected
+
     const failsafe = setTimeout(() => {
       if (loading) {
-        console.warn("⚠️ Auth Synchronization Timeout: Engaging Fail-safe protocols.");
+        console.warn(`⚠️ Auth Synchronization Timeout (${timeoutDuration}ms): Engaging Fail-safe protocols.`);
         setLoading(false);
       }
-    }, 20000); // 20 Second Strategic Window (Reduced from 60s)
+    }, timeoutDuration);
+
     return () => clearTimeout(failsafe);
   }, [loading]);
 
