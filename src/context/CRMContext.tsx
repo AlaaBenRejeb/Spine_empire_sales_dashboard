@@ -312,12 +312,20 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
         if (closerId) {
           const targetId = leadId || data?.[0]?.id;
           if (targetId) {
-            await supabase
+            const { error: handoffError } = await supabase
               .from('leads')
               .update({ closer_id: closerId })
               .eq('id', targetId);
-            console.log(`📡 Flow Matrix: Automatically routed to Closer ${closerId}`);
+            if (handoffError) {
+              console.error(`❌ HANDOFF FAILED: Lead ${targetId} booked but not routed to Closer ${closerId}:`, handoffError.message);
+            } else {
+              console.log(`📡 Flow Matrix: Routed lead ${targetId} → Closer ${closerId}`);
+            }
+          } else {
+            console.error(`❌ HANDOFF FAILED: Lead booked but no target ID found to assign Closer ${closerId}`);
           }
+        } else {
+          console.warn(`⚠️ Lead booked but no Closer assigned in Flow Matrix for Setter ${user?.id}. Configure mapping in Admin Ops.`);
         }
       }
         
