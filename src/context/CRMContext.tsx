@@ -99,21 +99,49 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
           .maybeSingle();
         if (mapping?.closer_id) setAssignedCloserId(mapping.closer_id);
 
-        const { data: dbLeads, error, count } = await supabase
-          .from('leads')
-          .select('*', { count: 'exact' });
+        const pageSize = 500;
+        let from = 0;
+        let totalCount: number | null = null;
+        const dbLeads: any[] = [];
 
-        if (error) {
-          console.error('❌ Leads fetch failed:', error.message, error.code, error.details);
-        } else {
-          console.log(`✅ Leads Sync: Fetched ${dbLeads?.length || 0} leads (Total Pool: ${count})`);
-          if (dbLeads && dbLeads.length === 0) {
-            console.warn("⚠️ Database returned 0 leads. Check RLS policies or if table is empty.");
+        while (true) {
+          const { data: pageLeads, error: pageError, count: pageCount } = await supabase
+            .from('leads')
+            .select('*', { count: from === 0 ? 'exact' : undefined })
+            .order('created_at', { ascending: false })
+            .range(from, from + pageSize - 1);
+
+          if (pageError) {
+            console.error('❌ Leads fetch failed:', pageError.message, pageError.code, pageError.details);
+            break;
           }
+
+          if (from === 0 && pageCount !== null) {
+            totalCount = pageCount;
+          }
+
+          if (!pageLeads || pageLeads.length === 0) {
+            break;
+          }
+
+          dbLeads.push(...pageLeads);
+
+          if (pageLeads.length < pageSize) {
+            break;
+          }
+
+          from += pageSize;
         }
 
-        if (dbLeads) {
-          if (count !== null) setTotalLeadsCount(count);
+        const count = totalCount ?? dbLeads.length;
+
+        console.log(`✅ Leads Sync: Fetched ${dbLeads.length} leads (Total Pool: ${count})`);
+        if (dbLeads.length === 0) {
+          console.warn("⚠️ Database returned 0 leads. Check RLS policies or if table is empty.");
+        }
+
+        if (dbLeads.length > 0 || count === 0) {
+          setTotalLeadsCount(count);
           const syncedNotes: Record<string, any> = {};
           const syncedLeads: any[] = dbLeads.map((lead: any) => ({
             id: lead.id,
