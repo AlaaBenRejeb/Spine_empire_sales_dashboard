@@ -88,7 +88,10 @@ export function AuthProvider({
       const { data: profileData, error } = await Promise.race([fetchPromise, timeoutPromise]);
 
       if (!isMounted) return;
-      if (error) console.error(`[${timerId}] Profile Fetch Error:`, error);
+      if (error) {
+        console.error(`[${timerId}] Profile Fetch Error:`, error);
+        return;
+      }
 
       if (profileData) {
         setProfile(profileData);
@@ -165,7 +168,12 @@ export function AuthProvider({
     }
   };
 
-  const needsOnboarding = user && !isSuperadmin && profile !== undefined && (profile === null || !profile.first_name || !profile.last_name || !profile.city || !profile.role);
+  const needsOnboarding = Boolean(
+    user &&
+    !isSuperadmin &&
+    profile &&
+    (!profile.first_name || !profile.last_name || !profile.city)
+  );
   const isPublicRoute = typeof window !== 'undefined' && (window.location.pathname.startsWith('/join') || window.location.pathname.startsWith('/auth/signup'));
 
   if (loading) {
