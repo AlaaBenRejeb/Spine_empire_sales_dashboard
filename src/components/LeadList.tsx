@@ -10,15 +10,30 @@ export default function LeadList() {
   const [statusFilter, setStatusFilter] = useState<"all" | "new" | "called" | "booked">("all");
   const { activeLead, setActiveLead, leadNotes, updateLeadNote, leads } = useCRM();
 
+  const isSetterArchivedStatus = (status: string) => (
+    status === "won" ||
+    status === "closed_won" ||
+    status === "active_client" ||
+    status === "lost" ||
+    status === "closed_lost" ||
+    status === "noshow" ||
+    status === "followup"
+  );
+
   const filteredLeads = useMemo(() => {
     return leads.filter(lead => {
       const matchesSearch = lead["Practice Name"].toLowerCase().includes(search.toLowerCase()) ||
                            lead.City.toLowerCase().includes(search.toLowerCase());
       
       if (!matchesSearch) return false;
+      const status = leadNotes[lead.id]?.status || "new";
+
+      // Sold/closed outcomes are archived from the setter working list.
+      // If closer resets a deal back to booked, it reappears automatically.
+      if (isSetterArchivedStatus(status)) return false;
+
       if (statusFilter === "all") return true;
       
-      const status = leadNotes[lead.id]?.status || "new";
       return status === statusFilter;
     });
   }, [search, leads, leadNotes, statusFilter]);

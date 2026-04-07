@@ -400,6 +400,9 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
       };
       if (bookedCloserId) {
         updatePayload.closer_id = bookedCloserId;
+      } else {
+        // If a lead is un-booked by a setter, detach closer assignment so handoff views stay clean.
+        updatePayload.closer_id = null;
       }
 
       const { data, error } = await supabase
