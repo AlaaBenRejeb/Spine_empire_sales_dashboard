@@ -1,4 +1,5 @@
 import { normalizeDealValue } from "@/lib/dealValue";
+import { isInLocalTimeframe, type Timeframe } from "@/lib/timeframe";
 
 export interface SetterMetrics {
   totalLeads: number;
@@ -10,28 +11,46 @@ export interface SetterMetrics {
   projectedRevenue: number;
 }
 
+export interface SetterActivityMetrics {
+  leadsWorked: number;
+  callsPlaced: number;
+  demosBooked: number;
+  bookRate: number;
+  projectedRevenue: number;
+  powerScore: number;
+  messagesSent: number;
+  ignored: number;
+  bookedWithoutValue: number;
+  actionTotal: number;
+}
+
+interface SetterInteractionEntry {
+  lead_id: string;
+  actor_id: string;
+  kind: "call" | "sms" | "email";
+  occurred_at: string;
+}
+
+interface SetterStatusEventEntry {
+  lead_id: string;
+  actor_id: string;
+  to_status: string;
+  value_snapshot: number | null;
+  occurred_at: string;
+}
+
 export function calculateSetterMetrics(
   allLeads: any[],
   allNotes: Record<string, any>,
   userId: string,
-  timeframe: 'today' | 'month' | 'all' = 'all'
+  timeframe: Timeframe = 'all'
 ): SetterMetrics {
-  const now = new Date();
-  const todayStr = now.toISOString().split('T')[0];
-
   const notesArray = Object.values(allNotes);
 
   const filteredNotes = notesArray.filter((n: any) => {
     // SECURITY: Always filter by the current user for individual performance
     if (n.setter_id !== userId) return false;
-
-    if (timeframe === 'today') {
-      return n.synced_at?.startsWith(todayStr);
-    } else if (timeframe === 'month') {
-      const d = new Date(n.synced_at);
-      return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
-    }
-    return true; // 'all'
+    return timeframe === "all" ? true : isInLocalTimeframe(n.synced_at, timeframe);
   });
 
   const totalDials = filteredNotes.filter((n: any) => n.status !== "new" && n.status !== "ignored").length;
@@ -55,5 +74,46 @@ export function calculateSetterMetrics(
     conversionRate,
     powerScore,
     projectedRevenue
+  };
+}
+
+export function calculateSetterActionMetrics(
+  interactions: SetterInteractionEntry[],
+  statusEvents: SetterStatusEventEntry[],
+  userId: string,
+  timeframe: Timeframe = "all",
+): SetterActivityMetrics {
+  const filteredInteractions = interactions.filter(
+    (entry) => entry.actor_id === userId && isInLocalTimeframe(entry.occurred_at, timeframe),
+  );
+  const filteredStatusEvents = statusEvents.filter(
+    (entry) => entry.actor_id === userId && isInLocalTimeframe(entry.occurred_at, timeframe),
+  );
+
+  const callsPlaced = filteredInteractions.filter((entry) => entry.kind === "call").length;
+  const messagesSent = filteredInteractions.filter((entry) => entry.kind === "sms" || entry.kind === "email").length;
+  const bookedEvents = filteredStatusEvents.filter((entry) => entry.to_status === "booked");
+  const ignored = filteredStatusEvents.filter((entry) => entry.to_status === "ignored").length;
+  const demosBooked = bookedEvents.length;
+  const projectedRevenue = bookedEvents.reduce((sum, entry) => sum + (normalizeDealValue(entry.value_snapshot) ?? 0), 0);
+  const bookedWithoutValue = bookedEvents.filter((entry) => normalizeDealValue(entry.value_snapshot) === null).length;
+  const bookRate = callsPlaced > 0 ? (demosBooked / callsPlaced) * 100 : 0;
+  const powerScore = Math.min(Math.round((bookRate * 0.7) + (Math.min(demosBooked, 10) * 3)), 100);
+
+  const uniqueLeadIds = new Set<string>();
+  filteredInteractions.forEach((entry) => uniqueLeadIds.add(entry.lead_id));
+  filteredStatusEvents.forEach((entry) => uniqueLeadIds.add(entry.lead_id));
+
+  return {
+    leadsWorked: uniqueLeadIds.size,
+    callsPlaced,
+    demosBooked,
+    bookRate,
+    projectedRevenue,
+    powerScore,
+    messagesSent,
+    ignored,
+    bookedWithoutValue,
+    actionTotal: callsPlaced + messagesSent + demosBooked + ignored,
   };
 }

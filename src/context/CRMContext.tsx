@@ -24,10 +24,32 @@ interface LeadInteraction {
   created_at: string;
 }
 
+interface LeadStatusEvent {
+  id: string;
+  lead_id: string;
+  actor_id: string;
+  actor_role: string | null;
+  from_status: string | null;
+  to_status: string;
+  value_snapshot: number | null;
+  note: string | null;
+  meta: Record<string, any>;
+  occurred_at: string;
+}
+
 interface RecordInteractionInput {
   leadId: string;
   kind: InteractionKind;
   disposition?: CalledDisposition | null;
+  note?: string;
+  meta?: Record<string, any>;
+}
+
+interface RecordStatusEventInput {
+  leadId: string;
+  fromStatus?: string | null;
+  toStatus: string;
+  valueSnapshot?: number | null;
   note?: string;
   meta?: Record<string, any>;
 }
@@ -48,6 +70,7 @@ interface CRMContextType {
   liveMetrics: SetterMetrics;
   isSyncing: boolean;
   interactions: LeadInteraction[];
+  statusEvents: LeadStatusEvent[];
   recordInteraction: (input: RecordInteractionInput) => Promise<void>;
   startOutboundCall: (lead: any, opts?: { disposition?: CalledDisposition | null; note?: string; meta?: Record<string, any> }) => Promise<void>;
   logOutboundMessage: (lead: any, opts?: { kind?: "sms" | "email"; disposition?: CalledDisposition | null; note?: string; meta?: Record<string, any> }) => Promise<void>;
@@ -83,11 +106,24 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
   const [userPerformance, setUserPerformance] = useState<any | null>(null);
   const [isSyncing, setIsSyncing] = useState(false);
   const [interactions, setInteractions] = useState<LeadInteraction[]>([]);
+  const [statusEvents, setStatusEvents] = useState<LeadStatusEvent[]>([]);
   const fetchedRef = useRef(false);
   const notesStorageKey = user?.id ? `spine-empire-lead-notes-${user.id}` : null;
 
   const upsertInteractionInState = (entry: LeadInteraction) => {
     setInteractions((prev) => {
+      const exists = prev.some((item) => item.id === entry.id);
+      if (exists) {
+        return prev
+          .map((item) => (item.id === entry.id ? entry : item))
+          .sort((a, b) => new Date(b.occurred_at).getTime() - new Date(a.occurred_at).getTime());
+      }
+      return [entry, ...prev].sort((a, b) => new Date(b.occurred_at).getTime() - new Date(a.occurred_at).getTime());
+    });
+  };
+
+  const upsertStatusEventInState = (entry: LeadStatusEvent) => {
+    setStatusEvents((prev) => {
       const exists = prev.some((item) => item.id === entry.id);
       if (exists) {
         return prev
@@ -334,6 +370,49 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
     };
   }, [user?.id]);
 
+  useEffect(() => {
+    if (!user?.id) {
+      setStatusEvents([]);
+      return;
+    }
+
+    const fetchStatusEvents = async () => {
+      const { data, error } = await supabase
+        .from("lead_status_events")
+        .select("*")
+        .order("occurred_at", { ascending: false });
+
+      if (error) {
+        console.error("Failed to fetch lead status events:", error.message);
+        return;
+      }
+
+      setStatusEvents((data || []) as LeadStatusEvent[]);
+    };
+
+    fetchStatusEvents();
+
+    const statusEventsChannel = supabase
+      .channel(`lead-status-events-${user.id}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "lead_status_events" }, (payload: any) => {
+        if (payload.eventType === "DELETE") {
+          const deletedId = payload.old?.id as string;
+          if (!deletedId) return;
+          setStatusEvents((prev) => prev.filter((item) => item.id !== deletedId));
+          return;
+        }
+
+        const entry = payload.new as LeadStatusEvent;
+        if (!entry?.id) return;
+        upsertStatusEventInState(entry);
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(statusEventsChannel);
+    };
+  }, [user?.id]);
+
   // Update real-time performance metrics from Database "Intelligence Engine"
   useEffect(() => {
     if (!user?.id) return;
@@ -463,6 +542,36 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const recordStatusEvent = async (input: RecordStatusEventInput) => {
+    if (!user?.id || !input.leadId || !input.toStatus) return;
+
+    const payload = {
+      lead_id: input.leadId,
+      actor_id: user.id,
+      actor_role: userRole,
+      from_status: input.fromStatus || null,
+      to_status: input.toStatus,
+      value_snapshot: normalizeDealValue(input.valueSnapshot),
+      note: input.note?.trim() ? input.note.trim() : null,
+      meta: input.meta || {},
+    };
+
+    const { data, error } = await supabase
+      .from("lead_status_events")
+      .insert([payload])
+      .select("*")
+      .maybeSingle();
+
+    if (error) {
+      console.error("Failed to write lead status event:", error.message);
+      return;
+    }
+
+    if (data) {
+      upsertStatusEventInState(data as LeadStatusEvent);
+    }
+  };
+
   const updateLeadNote = async (leadId: string, updates: any) => {
     if (!leadId) return;
 
@@ -511,7 +620,7 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
     try {
       const { data: existingLead, error: existingLeadError } = await supabase
         .from("leads")
-        .select("metadata, closer_id")
+        .select("status, metadata, closer_id")
         .eq("id", leadId)
         .maybeSingle();
 
@@ -609,6 +718,7 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
 
       const persistedLead = data[0];
       const persistedMetadata = persistedLead?.metadata || {};
+      const previousStatus = (previousEntry?.status || existingLead?.status || "new") as string;
       const persistedEntry = {
         ...(previousEntry || {}),
         ...optimisticEntry,
@@ -629,6 +739,21 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
         }
         return next;
       });
+
+      if (previousStatus !== persistedEntry.status) {
+        await recordStatusEvent({
+          leadId,
+          fromStatus: previousStatus,
+          toStatus: persistedEntry.status,
+          valueSnapshot: persistedEntry.deal_value,
+          note: persistedEntry.comment,
+          meta: {
+            source: "setter_updateLeadNote",
+            called_disposition: persistedEntry.called_disposition,
+            scheduled_time: persistedEntry.scheduled_time || null,
+          },
+        });
+      }
     } catch (err) {
       setLeadNotes((prev) => {
         const next = { ...prev };
@@ -763,6 +888,7 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
         liveMetrics,
         isSyncing,
         interactions,
+        statusEvents,
         recordInteraction,
         startOutboundCall,
         logOutboundMessage,

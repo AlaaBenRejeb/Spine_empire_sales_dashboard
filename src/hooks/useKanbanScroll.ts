@@ -2,7 +2,7 @@
 
 import { useCallback, useRef, type WheelEvent } from "react";
 
-const EDGE_TOLERANCE = 2;
+const EDGE_TOLERANCE = 1;
 
 const isInteractiveTarget = (target: EventTarget | null) => {
   if (!(target instanceof HTMLElement)) return false;
@@ -20,35 +20,41 @@ export function useKanbanScroll() {
 
   const handleBoardWheel = useCallback(
     (event: WheelEvent<HTMLElement>) => {
-      if (Math.abs(event.deltaX) > Math.abs(event.deltaY)) return;
-
       const target = event.target as HTMLElement | null;
       if (isInteractiveTarget(target)) return;
       const lane = target?.closest("[data-kanban-lane-scroll='true']") as HTMLElement | null;
+      const hasHorizontalIntent = Math.abs(event.deltaX) > EDGE_TOLERANCE;
+      const hasVerticalIntent = Math.abs(event.deltaY) > EDGE_TOLERANCE;
 
-      if (!lane) {
+      if (hasHorizontalIntent) {
         event.preventDefault();
-        panBoard(event.deltaY);
+        panBoard(event.deltaX);
+        return;
+      }
+
+      if (!lane || !hasVerticalIntent) {
         return;
       }
 
       const canScrollVertically = lane.scrollHeight - lane.clientHeight > EDGE_TOLERANCE;
       if (!canScrollVertically) {
-        event.preventDefault();
-        panBoard(event.deltaY);
         return;
       }
 
       const maxScrollTop = Math.max(lane.scrollHeight - lane.clientHeight, 0);
-      const nextScrollTop = Math.min(Math.max(lane.scrollTop + event.deltaY, 0), maxScrollTop);
+      const movingDown = event.deltaY > 0;
+      const movingUp = event.deltaY < 0;
+      const atTop = lane.scrollTop <= EDGE_TOLERANCE;
+      const atBottom = lane.scrollTop >= maxScrollTop - EDGE_TOLERANCE;
 
-      event.preventDefault();
-
-      if (Math.abs(nextScrollTop - lane.scrollTop) > EDGE_TOLERANCE) {
+      if ((movingDown && !atBottom) || (movingUp && !atTop)) {
+        const nextScrollTop = Math.min(Math.max(lane.scrollTop + event.deltaY, 0), maxScrollTop);
+        event.preventDefault();
         lane.scrollTop = nextScrollTop;
         return;
       }
 
+      event.preventDefault();
       panBoard(event.deltaY);
     },
     [panBoard],
@@ -56,10 +62,10 @@ export function useKanbanScroll() {
 
   const handleRailWheel = useCallback(
     (event: WheelEvent<HTMLElement>) => {
-      if (Math.abs(event.deltaX) > Math.abs(event.deltaY)) return;
       if (isInteractiveTarget(event.target)) return;
+      if (Math.abs(event.deltaX) <= EDGE_TOLERANCE) return;
       event.preventDefault();
-      panBoard(event.deltaY);
+      panBoard(event.deltaX);
     },
     [panBoard],
   );
