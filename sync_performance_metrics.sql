@@ -46,7 +46,7 @@ BEGIN
       SUM(
         CASE
           WHEN status IN ('won', 'closed_won', 'active_client')
-          THEN COALESCE((metadata->>'deal_value')::NUMERIC, 6500)
+          THEN COALESCE(NULLIF(metadata->>'deal_value', '')::NUMERIC, 0)
           ELSE 0
         END
       ),
@@ -131,7 +131,7 @@ BEGIN
       SUM(
         CASE
           WHEN status IN ('won', 'closed_won', 'active_client')
-          THEN COALESCE((metadata->>'deal_value')::NUMERIC, 6500)
+          THEN COALESCE(NULLIF(metadata->>'deal_value', '')::NUMERIC, 0)
           ELSE 0
         END
       ),
@@ -266,7 +266,7 @@ SELECT
     SUM(
       CASE
         WHEN status IN ('won', 'closed_won', 'active_client')
-        THEN COALESCE((metadata->>'deal_value')::NUMERIC, 6500)
+        THEN COALESCE(NULLIF(metadata->>'deal_value', '')::NUMERIC, 0)
         ELSE 0
       END
     ),
@@ -349,7 +349,7 @@ SELECT
     SUM(
       CASE
         WHEN status IN ('won', 'closed_won', 'active_client')
-        THEN COALESCE((metadata->>'deal_value')::NUMERIC, 6500)
+        THEN COALESCE(NULLIF(metadata->>'deal_value', '')::NUMERIC, 0)
         ELSE 0
       END
     ),

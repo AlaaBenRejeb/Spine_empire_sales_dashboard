@@ -21,6 +21,7 @@ import {
 import { useCRM } from "@/context/CRMContext";
 import FollowUpModal from "@/components/FollowUpModal";
 import { useEffect, useMemo, useState } from "react";
+import { formatDealValueCurrency } from "@/lib/dealValue";
 
 const COLUMNS = [
   { id: "new", title: "Market Targets", color: "bg-primary" },
@@ -171,17 +172,11 @@ export default function DealsPage() {
                             </div>
                             <div className="flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 border border-primary/20 rounded-lg shadow-sm group/val relative">
                               <DollarSign size={12} className="text-primary" />
-                              <input
-                                type="text"
-                                defaultValue={leadNotes[lead.id]?.deal_value || lead.DealValue || 4000}
-                                onBlur={(e) => {
-                                  const val = parseInt(e.target.value.replace(/\D/g, ""), 10);
-                                  updateLeadNote(lead.id, { deal_value: val || 4000 });
-                                }}
-                                className="text-[10px] font-black text-primary bg-transparent border-none outline-none w-14 focus:ring-0 p-0"
-                              />
+                              <span className="text-[10px] font-black text-primary whitespace-nowrap">
+                                {formatDealValueCurrency(leadNotes[lead.id]?.deal_value ?? lead.DealValue)}
+                              </span>
                               <div className="absolute -top-6 left-1/2 -translate-x-1/2 bg-black text-white text-[8px] font-black uppercase px-2 py-1 rounded opacity-0 group-hover/val:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
-                                Edit Value
+                                Closer Controlled
                               </div>
                             </div>
                             <div className="ml-auto flex items-center gap-2">

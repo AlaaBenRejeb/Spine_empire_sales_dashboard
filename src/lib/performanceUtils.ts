@@ -1,7 +1,10 @@
+import { normalizeDealValue } from "@/lib/dealValue";
+
 export interface SetterMetrics {
   totalLeads: number;
   totalDials: number;
   totalBooked: number;
+  bookedWithoutValue: number;
   conversionRate: number;
   powerScore: number;
   projectedRevenue: number;
@@ -15,7 +18,6 @@ export function calculateSetterMetrics(
 ): SetterMetrics {
   const now = new Date();
   const todayStr = now.toISOString().split('T')[0];
-  const DEAL_VALUE = 6500;
 
   const notesArray = Object.values(allNotes);
 
@@ -33,8 +35,14 @@ export function calculateSetterMetrics(
   });
 
   const totalDials = filteredNotes.filter((n: any) => n.status !== "new" && n.status !== "ignored").length;
-  const totalBooked = filteredNotes.filter((n: any) => n.status === "booked").length;
+  const bookedNotes = filteredNotes.filter((n: any) => n.status === "booked");
+  const totalBooked = bookedNotes.length;
+  const bookedWithoutValue = bookedNotes.filter((n: any) => normalizeDealValue(n.deal_value) === null).length;
   const conversionRate = totalDials > 0 ? (totalBooked / totalDials) * 100 : 0;
+  const projectedRevenue = bookedNotes.reduce((sum: number, n: any) => {
+    const value = normalizeDealValue(n.deal_value);
+    return sum + (value ?? 0);
+  }, 0);
   
   // Power Score = (ConvRate * 0.7) + (Bookings/10 * 30) - capped at 100
   const powerScore = Math.min(Math.round((conversionRate * 0.7) + (Math.min(totalBooked, 10) * 3)), 100);
@@ -43,8 +51,9 @@ export function calculateSetterMetrics(
     totalLeads: allLeads.length,
     totalDials,
     totalBooked,
+    bookedWithoutValue,
     conversionRate,
     powerScore,
-    projectedRevenue: totalBooked * DEAL_VALUE
+    projectedRevenue
   };
 }

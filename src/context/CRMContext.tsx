@@ -7,6 +7,7 @@ const supabase = createClient();
 
 import { useAuth } from "@/context/AuthContext";
 import { calculateSetterMetrics, SetterMetrics } from "@/lib/performanceUtils";
+import { normalizeDealValue } from "@/lib/dealValue";
 
 type InteractionKind = "call" | "sms" | "email";
 type CalledDisposition = "hot" | "cold" | "followup";
@@ -109,7 +110,7 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
     Email: lead.metadata?.email || lead.id,
     "Revenue Range": lead.revenue_range || "Unknown",
     "Main Challenge": lead.main_challenge || "",
-    DealValue: lead.metadata?.deal_value || 6500,
+    DealValue: normalizeDealValue(lead.metadata?.deal_value),
     Source: lead.metadata?.source || "manual",
   });
 
@@ -195,7 +196,7 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
               id: lead.id,
               status: lead.status,
               comment: lead.metadata?.comment || "",
-              deal_value: lead.metadata?.deal_value || 6500,
+              deal_value: normalizeDealValue(lead.metadata?.deal_value),
               called_disposition: normalizeCalledDisposition(lead.metadata?.called_disposition),
               synced_at: lead.metadata?.synced_at,
               setter_id: lead.setter_id,
@@ -257,7 +258,7 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
             [updated.id]: {
               status: updated.status,
               comment: updated.metadata?.comment || "",
-              deal_value: updated.metadata?.deal_value || 6500,
+              deal_value: normalizeDealValue(updated.metadata?.deal_value),
               called_disposition: normalizeCalledDisposition(updated.metadata?.called_disposition),
               synced_at: updated.metadata?.synced_at,
               setter_id: updated.setter_id
@@ -405,6 +406,7 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
     totalLeads: 0,
     totalDials: 0,
     totalBooked: 0,
+    bookedWithoutValue: 0,
     conversionRate: 0,
     powerScore: 0,
     projectedRevenue: 0
@@ -462,9 +464,18 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
 
     const previousEntry = leadNotes[leadId];
     const hasCalledDispositionUpdate = Object.prototype.hasOwnProperty.call(updates || {}, "called_disposition");
+    const requestedDealValueUpdate = Object.prototype.hasOwnProperty.call(updates || {}, "deal_value");
+    const canEditDealValue = userRole === "admin" || userRole === "superadmin" || userRole === "closer";
+    const hasDealValueUpdate = requestedDealValueUpdate && canEditDealValue;
+    if (requestedDealValueUpdate && !canEditDealValue) {
+      console.warn("⚠️ Setter-side deal value write blocked. Deal value is closer/admin controlled.");
+    }
     const normalizedDisposition = hasCalledDispositionUpdate
       ? normalizeCalledDisposition(updates?.called_disposition)
       : normalizeCalledDisposition(previousEntry?.called_disposition);
+    const normalizedDealValue = hasDealValueUpdate
+      ? normalizeDealValue(updates?.deal_value)
+      : normalizeDealValue(previousEntry?.deal_value);
     const now = new Date().toISOString();
     const shouldForceCalledStatus = hasCalledDispositionUpdate && normalizedDisposition !== null;
     const nextStatus = ((updates?.status || (shouldForceCalledStatus ? "called" : previousEntry?.status) || "new") as string);
@@ -479,6 +490,7 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
       ...updates,
       status: nextStatus,
       called_disposition: normalizedDisposition,
+      deal_value: normalizedDealValue,
       synced_at: now,
       setter_id: user?.id,
       id: leadId,
@@ -534,10 +546,27 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
         }
       }
 
-      const mergedMetadata = {
+      const mergedMetadata: Record<string, any> = {
         ...(existingLead?.metadata || {}),
-        ...optimisticEntry,
+        status: optimisticEntry.status,
+        synced_at: now,
+        setter_id: user?.id,
       };
+
+      Object.entries(updates || {}).forEach(([key, value]) => {
+        if (key === "status") return;
+        if (key === "called_disposition") {
+          mergedMetadata.called_disposition = normalizedDisposition;
+          return;
+        }
+        if (key === "deal_value") {
+          if (hasDealValueUpdate) {
+            mergedMetadata.deal_value = normalizedDealValue;
+          }
+          return;
+        }
+        mergedMetadata[key] = value;
+      });
 
       const updatePayload: Record<string, any> = {
         status: optimisticEntry.status,
@@ -574,8 +603,22 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
         return;
       }
 
+      const persistedLead = data[0];
+      const persistedMetadata = persistedLead?.metadata || {};
+      const persistedEntry = {
+        ...(previousEntry || {}),
+        ...optimisticEntry,
+        id: leadId,
+        status: persistedLead?.status || optimisticEntry.status,
+        comment: persistedMetadata.comment || "",
+        deal_value: normalizeDealValue(persistedMetadata.deal_value),
+        called_disposition: normalizeCalledDisposition(persistedMetadata.called_disposition),
+        synced_at: persistedMetadata.synced_at || now,
+        setter_id: persistedLead?.setter_id || user?.id,
+      };
+
       setLeadNotes((prev) => {
-        const next = { ...prev, [leadId]: optimisticEntry };
+        const next = { ...prev, [leadId]: persistedEntry };
         if (notesStorageKey) {
           localStorage.setItem(notesStorageKey, JSON.stringify(next));
         }
@@ -677,7 +720,7 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
         setLeadNotes((prev) => {
           const next = {
             ...prev,
-            [newLeadRaw.id]: { id: newLeadRaw.id, status: "new", comment: "", deal_value: 6500, called_disposition: null },
+            [newLeadRaw.id]: { id: newLeadRaw.id, status: "new", comment: "", deal_value: null, called_disposition: null },
           };
           if (notesStorageKey) {
             localStorage.setItem(notesStorageKey, JSON.stringify(next));

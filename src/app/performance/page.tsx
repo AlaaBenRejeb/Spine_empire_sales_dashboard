@@ -15,7 +15,7 @@ export default function PerformancePage() {
   const conversionRate = liveMetrics.conversionRate || 0;
   const powerScore = liveMetrics.powerScore || 0;
   const revenue = liveMetrics.projectedRevenue || 0;
-  const DEAL_VALUE = 6500;
+  const bookedWithoutValue = liveMetrics.bookedWithoutValue || 0;
   const totalLeads = totalLeadsCount || 0;
   const totalDials = liveMetrics.totalDials || 0; 
   
@@ -205,7 +205,10 @@ export default function PerformancePage() {
                  <div className="flex flex-col">
                     <span className="text-[10px] text-muted-foreground font-black uppercase tracking-[0.3em] mb-2">Pipeline Opportunity</span>
                     <span className="text-4xl font-heading font-black italic tracking-tighter group-hover:text-green-500 transition-colors">
-                       ${(totalBooked * DEAL_VALUE).toLocaleString()} VALUATION
+                       ${revenue.toLocaleString()} VALUATION
+                    </span>
+                    <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground mt-2">
+                      {bookedWithoutValue} BOOKED WITHOUT VALUE
                     </span>
                  </div>
                  <div className="bg-green-500/20 p-5 rounded-2xl border-2 border-green-500/20 shadow-xl group-hover:bg-green-500 group-hover:text-black transition-all">
