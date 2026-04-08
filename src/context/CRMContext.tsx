@@ -112,6 +112,8 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
     "Main Challenge": lead.main_challenge || "",
     DealValue: normalizeDealValue(lead.metadata?.deal_value),
     Source: lead.metadata?.source || "manual",
+    CreatedAt: lead.created_at || null,
+    UpdatedAt: lead.updated_at || null,
   });
 
   // 1. Initial Data Load — driven by auth state, no competing getSession() call
@@ -198,6 +200,7 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
               comment: lead.metadata?.comment || "",
               deal_value: normalizeDealValue(lead.metadata?.deal_value),
               called_disposition: normalizeCalledDisposition(lead.metadata?.called_disposition),
+              scheduled_time: lead.metadata?.scheduled_time || "",
               synced_at: lead.metadata?.synced_at,
               setter_id: lead.setter_id,
             };
@@ -260,6 +263,7 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
               comment: updated.metadata?.comment || "",
               deal_value: normalizeDealValue(updated.metadata?.deal_value),
               called_disposition: normalizeCalledDisposition(updated.metadata?.called_disposition),
+              scheduled_time: updated.metadata?.scheduled_time || "",
               synced_at: updated.metadata?.synced_at,
               setter_id: updated.setter_id
             }
@@ -613,6 +617,7 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
         comment: persistedMetadata.comment || "",
         deal_value: normalizeDealValue(persistedMetadata.deal_value),
         called_disposition: normalizeCalledDisposition(persistedMetadata.called_disposition),
+        scheduled_time: persistedMetadata.scheduled_time || "",
         synced_at: persistedMetadata.synced_at || now,
         setter_id: persistedLead?.setter_id || user?.id,
       };
@@ -720,7 +725,14 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
         setLeadNotes((prev) => {
           const next = {
             ...prev,
-            [newLeadRaw.id]: { id: newLeadRaw.id, status: "new", comment: "", deal_value: null, called_disposition: null },
+            [newLeadRaw.id]: {
+              id: newLeadRaw.id,
+              status: "new",
+              comment: "",
+              deal_value: null,
+              called_disposition: null,
+              scheduled_time: "",
+            },
           };
           if (notesStorageKey) {
             localStorage.setItem(notesStorageKey, JSON.stringify(next));
