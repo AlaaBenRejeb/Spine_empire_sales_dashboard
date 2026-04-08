@@ -86,6 +86,20 @@ export default function PerformancePage() {
         </div>
       </header>
 
+      <div className="glass-card border border-white/10 bg-white/[0.04] px-5 py-4 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+        <div className="flex flex-col gap-1">
+          <span className="text-[9px] font-black uppercase tracking-[0.35em] text-white/45">
+            Data Scope
+          </span>
+          <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-white/70 leading-relaxed">
+            Status history includes conservative internal backfill. Call history is exact only from the interaction rollout forward.
+          </p>
+        </div>
+        <span className="text-[9px] font-black uppercase tracking-[0.28em] text-amber-200/80">
+          Exact over guessed
+        </span>
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-8">
         {metrics.map((metric, idx) => (
           <motion.div
