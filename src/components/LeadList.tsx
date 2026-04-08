@@ -47,9 +47,9 @@ export default function LeadList() {
   }, [search, leads, leadNotes, statusFilter, calledDispositionFilter]);
 
   return (
-    <div className="flex flex-col h-full gap-8">
+    <div className="flex flex-col h-full gap-6">
       {/* Minimal Elite Search Header */}
-      <div className="flex flex-col md:flex-row gap-4 items-center">
+      <div className="flex flex-col md:flex-row gap-3 items-center">
         <div className="relative flex-1">
           <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
           <input 
@@ -57,7 +57,7 @@ export default function LeadList() {
             placeholder="Search Target Clinics..." 
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full bg-secondary/50 border border-glass-border rounded-xl py-5 pl-14 pr-8 text-xs font-bold tracking-widest uppercase focus:border-foreground outline-none transition-all"
+            className="w-full bg-secondary/50 border border-glass-border rounded-xl py-4 pl-14 pr-8 text-[11px] font-bold tracking-widest uppercase focus:border-foreground outline-none transition-all"
           />
         </div>
         <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar min-w-[300px]">
@@ -65,7 +65,7 @@ export default function LeadList() {
              <button 
                key={status}
                onClick={() => setStatusFilter(status)}
-               className={`px-4 py-4 rounded-xl font-bold text-[10px] uppercase tracking-widest transition-all whitespace-nowrap border ${
+               className={`px-4 py-3 rounded-xl font-bold text-[10px] uppercase tracking-widest transition-all whitespace-nowrap border ${
                  statusFilter === status 
                  ? 'bg-black text-white border-black dark:bg-white dark:text-black' 
                  : 'bg-background border-glass-border text-muted-foreground hover:border-black'
@@ -74,7 +74,7 @@ export default function LeadList() {
                {status}
              </button>
           ))}
-          <div className="px-6 py-4 bg-secondary/50 text-muted-foreground font-bold text-[10px] uppercase tracking-widest rounded-xl border border-glass-border whitespace-nowrap">
+          <div className="px-5 py-3 bg-black text-white dark:bg-white dark:text-black font-bold text-[10px] uppercase tracking-widest rounded-xl border border-black dark:border-white whitespace-nowrap shadow-[0_10px_25px_rgba(0,0,0,0.08)]">
              {filteredLeads.length} Targets
           </div>
         </div>
@@ -99,7 +99,7 @@ export default function LeadList() {
       )}
 
       {/* Grid of Minimal Lead Cards */}
-      <div className="flex-1 overflow-y-auto pr-2 space-y-4 hide-scrollbar">
+      <div className="flex-1 overflow-y-auto pr-2 space-y-3 hide-scrollbar">
         <AnimatePresence mode="popLayout">
           {filteredLeads.map((lead, idx) => {
              const isActive = activeLead?.id === lead.id;
@@ -115,10 +115,11 @@ export default function LeadList() {
                  animate={{ opacity: 1, y: 0 }}
                  transition={{ delay: idx * 0.03 }}
                  onClick={() => setActiveLead(lead)}
-                 className={`glass-card p-0 overflow-hidden cursor-pointer group border ${
-                   isActive ? 'ring-2 ring-black dark:ring-white ring-offset-2 ring-offset-background' : ''
+                 className={`glass-card relative p-0 overflow-hidden cursor-pointer group border transition-all duration-300 ${
+                   isActive ? 'ring-2 ring-black dark:ring-white ring-offset-2 ring-offset-background shadow-[0_18px_50px_rgba(0,0,0,0.14)]' : 'hover:-translate-y-0.5 hover:shadow-[0_14px_38px_rgba(0,0,0,0.08)]'
                  }`}
                >
+                 <div className={`pointer-events-none absolute inset-x-6 top-0 h-px bg-gradient-to-r from-transparent via-black/20 to-transparent dark:via-white/25 ${isActive ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'} transition-opacity`} />
                  <div className="flex flex-col md:flex-row items-stretch">
                     {/* Status Dot Logic */}
                     <div className={`w-1.5 md:w-2 ${
@@ -127,17 +128,22 @@ export default function LeadList() {
                       status === 'ignored' ? 'bg-red-500' : 'bg-muted-foreground/10'
                     }`} />
 
-                    <div className="flex-1 p-6 flex flex-col md:flex-row justify-between items-center gap-6">
-                       <div className="flex items-center gap-6 flex-1">
-                          <div className="w-16 h-16 bg-secondary/50 rounded-xl flex items-center justify-center text-center border border-glass-border">
-                             <Briefcase size={24} className="text-muted-foreground" />
+                    <div className="flex-1 p-4 md:p-5 flex flex-col md:flex-row justify-between items-center gap-4">
+                       <div className="flex items-center gap-4 flex-1 min-w-0">
+                          <div className="w-12 h-12 bg-secondary/50 rounded-xl flex items-center justify-center text-center border border-glass-border shrink-0">
+                             <Briefcase size={18} className="text-muted-foreground" />
                           </div>
 
-                          <div className="flex flex-col gap-1">
+                          <div className="flex flex-col gap-1 min-w-0">
                              <div className="flex flex-wrap items-center gap-2">
-                                <h3 className="text-lg font-bold tracking-tight uppercase leading-tight">{lead["Practice Name"]}</h3>
+                                <h3 className="text-base font-bold tracking-tight uppercase leading-tight truncate max-w-full">{lead["Practice Name"]}</h3>
                                 {reviews > 110 && (
                                    <Star size={12} className="text-black/20 dark:text-white/20 fill-current" />
+                                )}
+                                {isActive && (
+                                  <div className="px-2 py-0.5 bg-black text-white dark:bg-white dark:text-black rounded text-[7px] font-black uppercase tracking-widest whitespace-nowrap">
+                                    Active
+                                  </div>
                                 )}
                                 {status === 'booked' && (
                                   <div className="px-2 py-0.5 bg-emerald-500/10 border border-emerald-500/20 rounded text-[7px] font-black text-emerald-500 uppercase tracking-widest whitespace-nowrap">
@@ -157,7 +163,7 @@ export default function LeadList() {
                                   </>
                                 )}
                              </div>
-                             <div className="flex items-center gap-4 text-[10px] font-bold text-muted-foreground uppercase tracking-widest leading-none">
+                             <div className="flex flex-wrap items-center gap-3 text-[9px] font-bold text-muted-foreground uppercase tracking-[0.16em] leading-none">
                                 <span className="flex items-center gap-1.5"><MapPin size={12} /> {lead.City}</span>
                                 <span className="flex items-center gap-1.5 opacity-80"><User size={12} /> {lead["First Name"] || "Owner"}</span>
                                 <span className="flex items-center gap-1.5 opacity-60">{lead.Source || "manual"}</span>
@@ -165,23 +171,23 @@ export default function LeadList() {
                           </div>
                        </div>
 
-                       <div className="flex items-center gap-3 w-full md:w-auto">
+                       <div className="flex items-center gap-2 w-full md:w-auto shrink-0">
                           {notes?.comment && (
-                             <MessageSquare size={16} className="text-muted-foreground opacity-40" />
+                             <MessageSquare size={14} className="text-muted-foreground opacity-40" />
                           )}
 
                           <button
-                            className="flex-1 md:flex-none bg-black text-white dark:bg-white dark:text-black font-bold uppercase text-[10px] tracking-widest px-8 py-4 rounded-xl flex items-center gap-3 hover:translate-y-[-1px] transition-all shadow-sm active:translate-y-0"
+                            className="flex-1 md:flex-none bg-black text-white dark:bg-white dark:text-black font-bold uppercase text-[9px] tracking-[0.2em] px-6 py-3 rounded-xl flex items-center justify-center gap-2 hover:translate-y-[-1px] transition-all shadow-[0_10px_24px_rgba(0,0,0,0.12)] active:translate-y-0"
                             onClick={async (e) => {
                               e.stopPropagation();
                               await startOutboundCall(lead);
                             }}
                           >
-                             <Phone size={16} strokeWidth={2.5} /> CALL 
+                             <Phone size={14} strokeWidth={2.5} /> Call
                           </button>
 
-                          <div className="p-4 bg-secondary rounded-xl border border-glass-border hover:border-black transition-all">
-                             <ChevronRight size={20} className="text-muted-foreground" />
+                          <div className="p-3 bg-secondary rounded-xl border border-glass-border group-hover:border-black transition-all">
+                             <ChevronRight size={18} className="text-muted-foreground" />
                           </div>
                        </div>
                     </div>

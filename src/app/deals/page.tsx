@@ -19,6 +19,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import AddLeadModal from "@/components/AddLeadModal";
 import FollowUpModal from "@/components/FollowUpModal";
 import { useCRM } from "@/context/CRMContext";
+import { useKanbanScroll } from "@/hooks/useKanbanScroll";
 import { formatDealValueCurrency } from "@/lib/dealValue";
 
 const COLUMNS = [
@@ -185,6 +186,7 @@ const getStatusForLead = (leadNotes: Record<string, any>, leadId: string): Colum
 
 export default function DealsPage() {
   const { leads, leadNotes, interactions, updateLeadNote, startOutboundCall, logOutboundMessage } = useCRM();
+  const { boardRef, handleBoardWheel, handleRailWheel } = useKanbanScroll();
   const [selectedLead, setSelectedLead] = useState<any>(null);
   const [isFollowUpOpen, setIsFollowUpOpen] = useState(false);
   const [followUpTab, setFollowUpTab] = useState<"email" | "sms">("sms");
@@ -438,8 +440,9 @@ export default function DealsPage() {
   const panelDisposition = (panelLeadNotes?.called_disposition || null) as CalledDisposition | null;
 
   const renderLeadPanelContent = expandedLead ? (
-    <div className="flex h-full flex-col gap-5 overflow-y-auto rounded-[2rem] border border-white/10 bg-[#090909]/95 p-5 shadow-[0_30px_80px_rgba(0,0,0,0.45)] backdrop-blur-xl custom-scrollbar">
-      <div className="rounded-[1.5rem] border border-white/10 bg-white/[0.03] p-5">
+    <div className="relative flex h-full flex-col gap-5 overflow-y-auto rounded-[2rem] border border-white/10 bg-[#090909]/95 p-5 shadow-[0_30px_80px_rgba(0,0,0,0.45)] backdrop-blur-xl custom-scrollbar">
+      <div className="pointer-events-none absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-white/35 to-transparent" />
+      <div className="rounded-[1.5rem] border border-white/10 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.08),transparent_35%),rgba(255,255,255,0.03)] p-5">
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
@@ -505,7 +508,7 @@ export default function DealsPage() {
           onClick={async () => {
             await startOutboundCall(expandedLead, { meta: { origin: "deals_panel_call" } });
           }}
-          className="rounded-2xl bg-emerald-500 px-4 py-4 text-[10px] font-black uppercase tracking-[0.22em] text-black transition-transform hover:-translate-y-0.5 hover:bg-emerald-400"
+          className="rounded-2xl bg-emerald-500 px-4 py-4 text-[10px] font-black uppercase tracking-[0.22em] text-black shadow-[0_14px_32px_rgba(52,211,153,0.24)] transition-transform hover:-translate-y-0.5 hover:bg-emerald-400"
         >
           <span className="flex items-center justify-center gap-2">
             <Phone size={15} /> Call Now
@@ -643,7 +646,7 @@ export default function DealsPage() {
 
   return (
     <div className="flex h-screen flex-1 flex-col overflow-hidden bg-transparent">
-      <header className="shrink-0 px-6 pb-4 pt-8 md:px-10 md:pt-10">
+      <header onWheel={handleRailWheel} className="shrink-0 px-6 pb-4 pt-8 md:px-10 md:pt-10">
         <div className="flex flex-col gap-6">
           <div className="flex flex-col gap-6 xl:flex-row xl:items-end xl:justify-between">
             <div className="flex flex-col gap-2">
@@ -660,16 +663,26 @@ export default function DealsPage() {
             </div>
 
             <div className="flex flex-wrap items-center gap-3">
-              <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-[10px] font-black uppercase tracking-[0.24em] text-white/55">
-                {totalVisibleResults} visible leads
+              <div className="rounded-[1.35rem] border border-white bg-white px-4 py-3 text-black shadow-[0_0_30px_rgba(255,255,255,0.08)]">
+                <p className="text-[9px] font-black uppercase tracking-[0.26em] text-black/45">Visible</p>
+                <p className="mt-1 text-lg font-heading font-black uppercase italic leading-none">
+                  {totalVisibleResults} <span className="text-black/45">Leads</span>
+                </p>
               </div>
-              <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-[10px] font-black uppercase tracking-[0.24em] text-white/55">
-                {columnsToRender.length} active {columnsToRender.length === 1 ? "column" : "columns"}
+              <div className="rounded-[1.35rem] border border-white/10 bg-white/[0.03] px-4 py-3 text-white/70 shadow-[0_16px_40px_rgba(0,0,0,0.16)]">
+                <p className="text-[9px] font-black uppercase tracking-[0.26em] text-white/35">View</p>
+                <p className="mt-1 text-sm font-black uppercase tracking-[0.18em]">
+                  {columnsToRender.length} active {columnsToRender.length === 1 ? "column" : "columns"}
+                </p>
               </div>
             </div>
           </div>
 
-          <div className="rounded-[2rem] border border-white/10 bg-black/20 p-4 shadow-[0_20px_60px_rgba(0,0,0,0.2)] backdrop-blur-xl">
+          <div
+            onWheel={handleRailWheel}
+            className="relative overflow-hidden rounded-[2rem] border border-white/10 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.14),transparent_30%),rgba(0,0,0,0.24)] p-4 shadow-[0_24px_70px_rgba(0,0,0,0.24)] backdrop-blur-xl"
+          >
+            <div className="pointer-events-none absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-white/30 to-transparent" />
             <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
               <div className="relative w-full xl:max-w-xl">
                 <Search size={18} className="pointer-events-none absolute left-5 top-1/2 -translate-y-1/2 text-white/35" />
@@ -690,28 +703,33 @@ export default function DealsPage() {
               </button>
             </div>
 
-            <div className="mt-4 flex flex-wrap items-center gap-2">
-              {STAGE_FILTERS.map((filter) => {
-                const active = stageFilter === filter.id;
-                return (
-                  <button
-                    key={filter.id}
-                    onClick={() => {
-                      setStageFilter(filter.id as StageFilter);
-                      if (filter.id !== "called") {
-                        setCalledFilter("all");
-                      }
-                    }}
-                    className={`rounded-full border px-4 py-2 text-[10px] font-black uppercase tracking-[0.22em] transition-all ${
-                      active
-                        ? "border-white bg-white text-black"
-                        : "border-white/10 bg-white/[0.04] text-white/55 hover:border-white/20 hover:text-white"
-                    }`}
-                  >
-                    {filter.label}
-                  </button>
-                );
-              })}
+            <div className="mt-4 flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+              <div className="flex flex-wrap items-center gap-2">
+                {STAGE_FILTERS.map((filter) => {
+                  const active = stageFilter === filter.id;
+                  return (
+                    <button
+                      key={filter.id}
+                      onClick={() => {
+                        setStageFilter(filter.id as StageFilter);
+                        if (filter.id !== "called") {
+                          setCalledFilter("all");
+                        }
+                      }}
+                      className={`rounded-full border px-4 py-2 text-[10px] font-black uppercase tracking-[0.22em] transition-all ${
+                        active
+                          ? "border-white bg-white text-black"
+                          : "border-white/10 bg-white/[0.04] text-white/55 hover:border-white/20 hover:text-white"
+                      }`}
+                    >
+                      {filter.label}
+                    </button>
+                  );
+                })}
+              </div>
+              <p className="text-[10px] font-black uppercase tracking-[0.22em] text-white/30">
+                Wheel at lane edge to glide across columns
+              </p>
             </div>
 
             {stageFilter === "called" && (
@@ -742,12 +760,18 @@ export default function DealsPage() {
       </header>
 
       <div className={`flex-1 min-h-0 px-6 pb-8 md:px-10 ${expandedLead ? "lg:grid lg:grid-cols-[minmax(0,1fr)_420px] lg:gap-6" : ""}`}>
-        <div className="min-h-0" onClick={(event) => {
+        <div className="relative min-h-0" onClick={(event) => {
           if (event.target === event.currentTarget && expandedLead) {
             void closeLeadPanel();
           }
         }}>
-          <div className="flex h-full gap-5 overflow-x-auto overflow-y-hidden pb-4 pt-2 custom-scrollbar">
+          <div className="pointer-events-none absolute inset-y-2 left-0 z-10 hidden w-10 bg-gradient-to-r from-[#050505] to-transparent lg:block" />
+          <div className="pointer-events-none absolute inset-y-2 right-0 z-10 hidden w-10 bg-gradient-to-l from-[#050505] to-transparent lg:block" />
+          <div
+            ref={boardRef}
+            onWheel={handleBoardWheel}
+            className="flex h-full gap-5 overflow-x-auto overflow-y-hidden pb-4 pt-2 custom-scrollbar [scrollbar-gutter:stable_both-edges]"
+          >
             {columnsToRender.map((column, columnIndex) => {
               const visibleLeads = visibleLeadsByStatus[column.id];
               const totalInColumn = columnTotals[column.id];
@@ -760,23 +784,26 @@ export default function DealsPage() {
                     columnsToRender.length === 1 ? "w-full max-w-none" : ""
                   }`}
                 >
-                  <div className={`rounded-[1.75rem] border bg-white/[0.03] px-4 py-4 ${isFilteredColumn ? "border-white/20" : "border-white/10"}`}>
+                  <div className={`rounded-[1.75rem] border bg-[linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.02))] px-4 py-4 shadow-[0_18px_45px_rgba(0,0,0,0.14)] backdrop-blur-md ${isFilteredColumn ? "border-white/20" : "border-white/10"}`}>
                     <div className="flex items-start justify-between gap-4">
                       <div className="flex min-w-0 items-start gap-3">
-                        <div className={`mt-1 h-3 w-3 flex-shrink-0 rounded-full ${column.accent}`} />
+                        <div className={`mt-1 h-3 w-3 flex-shrink-0 rounded-full shadow-[0_0_16px_currentColor] ${column.accent}`} />
                         <div className="min-w-0">
                           <h3 className="font-heading text-sm font-black uppercase italic tracking-[0.16em] text-white">{column.title}</h3>
                           <p className="mt-1 text-[11px] font-medium leading-relaxed text-white/40">{column.subtitle}</p>
                         </div>
                       </div>
-                      <div className={`rounded-full border px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-white/65 ${column.border}`}>
+                      <div className={`rounded-full border px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] ${isFilteredColumn ? "border-white bg-white text-black" : `text-white/65 ${column.border}`}`}>
                         {visibleLeads.length}
                         {visibleLeads.length !== totalInColumn ? ` / ${totalInColumn}` : ""}
                       </div>
                     </div>
                   </div>
 
-                  <div className={`flex-1 overflow-y-auto rounded-[2rem] border bg-white/[0.02] p-4 custom-scrollbar ${column.border}`}>
+                  <div
+                    data-kanban-lane-scroll="true"
+                    className={`flex-1 overflow-y-auto rounded-[2rem] border bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.015))] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)] custom-scrollbar ${column.border}`}
+                  >
                     <div className="flex flex-col gap-4">
                       {visibleLeads.map((lead: any, index: number) => {
                         const notes = leadNotes[lead.id] || {};
@@ -798,10 +825,11 @@ export default function DealsPage() {
                             onClick={() => void openLeadPanel(lead.id)}
                             className={`group relative cursor-pointer rounded-[1.75rem] border p-5 transition-all duration-300 ${
                               isSelected
-                                ? "border-white/30 bg-white/[0.08] shadow-[0_22px_60px_rgba(0,0,0,0.35)]"
-                                : "border-white/10 bg-white/[0.04] hover:border-white/20 hover:bg-white/[0.06]"
+                                ? "border-white/35 bg-white/[0.08] shadow-[0_28px_70px_rgba(0,0,0,0.38)] -translate-y-0.5"
+                                : "border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.055),rgba(255,255,255,0.03))] shadow-[0_14px_35px_rgba(0,0,0,0.18)] hover:border-white/20 hover:bg-white/[0.06] hover:-translate-y-0.5"
                             } ${expandedLeadId && !isSelected ? "opacity-75 hover:opacity-100" : "opacity-100"}`}
                           >
+                            <div className={`pointer-events-none absolute inset-x-5 top-0 h-px bg-gradient-to-r from-transparent via-white/45 to-transparent ${isSelected ? "opacity-100" : "opacity-0 group-hover:opacity-60"}`} />
                             <div className={`absolute inset-y-5 right-0 w-1.5 rounded-l-full ${column.accent} ${isSelected ? "opacity-100" : "opacity-0 group-hover:opacity-70"}`} />
 
                             <div className="flex items-start justify-between gap-3">
@@ -813,6 +841,11 @@ export default function DealsPage() {
                                   {disposition && (
                                     <span className={`rounded-full border px-3 py-1 text-[10px] font-black uppercase tracking-[0.2em] ${DISPOSITION_STYLES[disposition]}`}>
                                       {disposition}
+                                    </span>
+                                  )}
+                                  {isSelected && (
+                                    <span className="rounded-full border border-white/15 bg-white/[0.09] px-3 py-1 text-[10px] font-black uppercase tracking-[0.2em] text-white/80">
+                                      Live panel
                                     </span>
                                   )}
                                 </div>
@@ -833,7 +866,7 @@ export default function DealsPage() {
                               </span>
                             </div>
 
-                            <div className="mt-4 rounded-[1.25rem] border border-white/10 bg-black/20 p-4">
+                            <div className="mt-4 rounded-[1.25rem] border border-white/10 bg-[linear-gradient(180deg,rgba(0,0,0,0.28),rgba(255,255,255,0.03))] p-4">
                               <div className="flex items-center justify-between gap-3">
                                 <div className="min-w-0">
                                   <p className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-white/35">
@@ -866,7 +899,7 @@ export default function DealsPage() {
                                   event.stopPropagation();
                                   await startOutboundCall(lead, { meta: { origin: "deals_card_call" } });
                                 }}
-                                className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-500 text-black transition-transform hover:-translate-y-0.5 hover:bg-emerald-400"
+                                className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-500 text-black shadow-[0_12px_28px_rgba(52,211,153,0.28)] transition-transform hover:-translate-y-0.5 hover:bg-emerald-400"
                                 title="Call lead"
                               >
                                 <Phone size={15} strokeWidth={3} />
