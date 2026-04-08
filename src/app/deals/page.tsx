@@ -5,6 +5,7 @@ import {
   ArrowLeftRight,
   CheckCircle2,
   ChevronRight,
+  ExternalLink,
   Mail,
   MapPin,
   MessageSquare,
@@ -469,6 +470,16 @@ export default function DealsPage() {
               <span className="flex items-center gap-2">
                 <MapPin size={12} /> {[expandedLead.City, expandedLead.State].filter(Boolean).join(", ") || "Location missing"}
               </span>
+              {expandedLead["Google Maps URL"] && (
+                <a
+                  href={expandedLead["Google Maps URL"]}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-white/60 transition-colors hover:border-white/25 hover:text-white"
+                >
+                  <ExternalLink size={12} /> Maps
+                </a>
+              )}
               <span className="flex items-center gap-2">
                 <Phone size={12} /> {expandedLead.Phone || "No phone"}
               </span>
@@ -861,6 +872,17 @@ export default function DealsPage() {
                               <span className="flex items-center gap-2">
                                 <MapPin size={11} /> {[lead.City, lead.State].filter(Boolean).join(", ") || "Location missing"}
                               </span>
+                              {lead["Google Maps URL"] && (
+                                <a
+                                  href={lead["Google Maps URL"]}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  onClick={(event) => event.stopPropagation()}
+                                  className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-white/55 transition-colors hover:border-white/25 hover:text-white"
+                                >
+                                  <ExternalLink size={10} /> Maps
+                                </a>
+                              )}
                               <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-white/40">
                                 {lead.Source || "manual"}
                               </span>

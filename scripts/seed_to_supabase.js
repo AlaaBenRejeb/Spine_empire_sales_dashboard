@@ -44,6 +44,17 @@ if (!fs.existsSync(resolvedLeadsPath)) {
 
 const supabase = createClient(supabaseUrl, supabaseKey);
 
+function buildGoogleMapsUrl(practiceName, city, state) {
+  const query = [practiceName, city, state]
+    .map((value) => (value || "").trim())
+    .filter(Boolean)
+    .join(" ");
+
+  return query
+    ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`
+    : null;
+}
+
 async function seedLeads() {
   const leadsRaw = fs.readFileSync(resolvedLeadsPath, "utf8");
   const leadsData = JSON.parse(leadsRaw);
@@ -57,6 +68,7 @@ async function seedLeads() {
     revenue_range: l["Revenue Range"] || "Unknown",
     main_challenge: l["Main Challenge"] || "",
     status: 'new',
+    google_maps_url: l["Google Maps URL"] || buildGoogleMapsUrl(l["Practice Name"], l.City, l.State),
     metadata: { 
       email: l.Email, 
       city: l.City, 

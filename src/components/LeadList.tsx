@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { Search, Phone, Star, MapPin, ChevronRight, MessageSquare, Briefcase, User } from "lucide-react";
+import { Search, Phone, Star, MapPin, ChevronRight, MessageSquare, Briefcase, User, ExternalLink } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useCRM } from "@/context/CRMContext";
 
@@ -165,6 +165,17 @@ export default function LeadList() {
                              </div>
                              <div className="flex flex-wrap items-center gap-3 text-[9px] font-bold text-muted-foreground uppercase tracking-[0.16em] leading-none">
                                 <span className="flex items-center gap-1.5"><MapPin size={12} /> {lead.City}</span>
+                                {lead["Google Maps URL"] && (
+                                  <a
+                                    href={lead["Google Maps URL"]}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    onClick={(e) => e.stopPropagation()}
+                                    className="flex items-center gap-1.5 opacity-60 transition-opacity hover:opacity-100"
+                                  >
+                                    <ExternalLink size={11} /> Maps
+                                  </a>
+                                )}
                                 <span className="flex items-center gap-1.5 opacity-80"><User size={12} /> {lead["First Name"] || "Owner"}</span>
                                 <span className="flex items-center gap-1.5 opacity-60">{lead.Source || "manual"}</span>
                              </div>

@@ -8,6 +8,7 @@ const supabase = createClient();
 import { useAuth } from "@/context/AuthContext";
 import { calculateSetterMetrics, SetterMetrics } from "@/lib/performanceUtils";
 import { normalizeDealValue } from "@/lib/dealValue";
+import { buildGoogleMapsUrl, resolveGoogleMapsUrl } from "@/lib/googleMaps";
 
 type InteractionKind = "call" | "sms" | "email";
 type CalledDisposition = "hot" | "cold" | "followup";
@@ -147,6 +148,12 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
     "Revenue Range": lead.revenue_range || "Unknown",
     "Main Challenge": lead.main_challenge || "",
     DealValue: normalizeDealValue(lead.metadata?.deal_value),
+    "Google Maps URL": resolveGoogleMapsUrl({
+      existingUrl: lead.google_maps_url,
+      practiceName: lead.business_name,
+      city: lead.metadata?.city,
+      state: lead.metadata?.state,
+    }),
     Source: lead.metadata?.source || "manual",
     CreatedAt: lead.created_at || null,
     UpdatedAt: lead.updated_at || null,
@@ -831,6 +838,11 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
           main_challenge: lead.main_challenge || "",
           status: 'new',
           setter_id: user?.id,
+          google_maps_url: buildGoogleMapsUrl({
+            practiceName: lead.business_name,
+            city: lead.city,
+            state: lead.state,
+          }),
           metadata: { 
             email: lead.email, 
             city: lead.city, 

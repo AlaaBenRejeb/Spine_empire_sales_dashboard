@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { PhoneCall, Phone, PhoneOutgoing, User, MessageSquare, MapPin, Clock } from "lucide-react";
+import { PhoneCall, Phone, PhoneOutgoing, User, MessageSquare, MapPin, Clock, ExternalLink } from "lucide-react";
 import { useCRM } from "@/context/CRMContext";
 import FollowUpModal from "@/components/FollowUpModal";
 
@@ -115,6 +115,16 @@ export default function CallHistoryPage() {
                   <span className="flex items-center gap-1.5">
                     <MapPin size={12} /> {log.City || "Unknown City"}
                   </span>
+                  {log["Google Maps URL"] && (
+                    <a
+                      href={log["Google Maps URL"]}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-1.5 opacity-80 transition-opacity hover:opacity-100"
+                    >
+                      <ExternalLink size={12} /> Maps
+                    </a>
+                  )}
                   <span className="flex items-center gap-1.5">
                     <Clock size={12} /> {formatOccurredAt(log.occurredAt)}
                   </span>
