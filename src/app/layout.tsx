@@ -62,8 +62,8 @@ function AppLayout({ children }: { children: React.ReactNode }) {
         )}
       </AnimatePresence>
 
-      <div className="flex-1 flex flex-col pt-16 lg:pt-0">
-        <main className="flex-1">
+      <div className="flex-1 flex flex-col pt-16 lg:pl-64 lg:pt-0">
+        <main className="flex-1 min-w-0">
           {children}
         </main>
       </div>

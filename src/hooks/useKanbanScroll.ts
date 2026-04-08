@@ -23,12 +23,14 @@ export function useKanbanScroll() {
       const target = event.target as HTMLElement | null;
       if (isInteractiveTarget(target)) return;
       const lane = target?.closest("[data-kanban-lane-scroll='true']") as HTMLElement | null;
-      const hasHorizontalIntent = Math.abs(event.deltaX) > EDGE_TOLERANCE;
+      const hasHorizontalIntent =
+        Math.abs(event.deltaX) > EDGE_TOLERANCE ||
+        (event.shiftKey && Math.abs(event.deltaY) > EDGE_TOLERANCE);
       const hasVerticalIntent = Math.abs(event.deltaY) > EDGE_TOLERANCE;
 
       if (hasHorizontalIntent) {
         event.preventDefault();
-        panBoard(event.deltaX);
+        panBoard(Math.abs(event.deltaX) > EDGE_TOLERANCE ? event.deltaX : event.deltaY);
         return;
       }
 
@@ -37,25 +39,15 @@ export function useKanbanScroll() {
       }
 
       const canScrollVertically = lane.scrollHeight - lane.clientHeight > EDGE_TOLERANCE;
+      event.preventDefault();
+
       if (!canScrollVertically) {
         return;
       }
 
       const maxScrollTop = Math.max(lane.scrollHeight - lane.clientHeight, 0);
-      const movingDown = event.deltaY > 0;
-      const movingUp = event.deltaY < 0;
-      const atTop = lane.scrollTop <= EDGE_TOLERANCE;
-      const atBottom = lane.scrollTop >= maxScrollTop - EDGE_TOLERANCE;
-
-      if ((movingDown && !atBottom) || (movingUp && !atTop)) {
-        const nextScrollTop = Math.min(Math.max(lane.scrollTop + event.deltaY, 0), maxScrollTop);
-        event.preventDefault();
-        lane.scrollTop = nextScrollTop;
-        return;
-      }
-
-      event.preventDefault();
-      panBoard(event.deltaY);
+      const nextScrollTop = Math.min(Math.max(lane.scrollTop + event.deltaY, 0), maxScrollTop);
+      lane.scrollTop = nextScrollTop;
     },
     [panBoard],
   );
@@ -63,9 +55,15 @@ export function useKanbanScroll() {
   const handleRailWheel = useCallback(
     (event: WheelEvent<HTMLElement>) => {
       if (isInteractiveTarget(event.target)) return;
-      if (Math.abs(event.deltaX) <= EDGE_TOLERANCE) return;
+      const horizontalDelta =
+        Math.abs(event.deltaX) > EDGE_TOLERANCE
+          ? event.deltaX
+          : event.shiftKey && Math.abs(event.deltaY) > EDGE_TOLERANCE
+            ? event.deltaY
+            : 0;
+      if (Math.abs(horizontalDelta) <= EDGE_TOLERANCE) return;
       event.preventDefault();
-      panBoard(event.deltaX);
+      panBoard(horizontalDelta);
     },
     [panBoard],
   );

@@ -728,7 +728,7 @@ export default function DealsPage() {
                 })}
               </div>
               <p className="text-[10px] font-black uppercase tracking-[0.22em] text-white/30">
-                Wheel at lane edge to glide across columns
+                Scroll lanes directly. Use shift + wheel or the rail to move across columns
               </p>
             </div>
 
@@ -802,7 +802,7 @@ export default function DealsPage() {
 
                   <div
                     data-kanban-lane-scroll="true"
-                    className={`flex-1 overflow-y-auto rounded-[2rem] border bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.015))] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)] custom-scrollbar ${column.border}`}
+                    className={`flex-1 overflow-y-auto overscroll-y-contain rounded-[2rem] border bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.015))] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)] custom-scrollbar ${column.border}`}
                   >
                     <div className="flex flex-col gap-4">
                       {visibleLeads.map((lead: any, index: number) => {
