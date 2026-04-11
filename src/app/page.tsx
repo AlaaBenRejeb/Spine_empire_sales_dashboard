@@ -72,7 +72,7 @@ export default function SetterDashboardContent() {
     if (prevActiveLeadId.current && prevActiveLeadId.current !== activeLeadId) {
       const previousLeadId = prevActiveLeadId.current;
       const existingLead = leadNotesRef.current[previousLeadId];
-      const currentStatus = existingLead?.status || "called";
+      const currentStatus = existingLead?.status || "new";
       updateLeadNote(previousLeadId, { status: currentStatus, comment: noteTextRef.current });
     }
 
@@ -281,7 +281,7 @@ export default function SetterDashboardContent() {
                      <textarea 
                        value={noteText}
                        onChange={(e) => setNoteText(e.target.value)}
-                       onBlur={() => handleStatusUpdate(leadNotes[activeLead.id]?.status || "called")}
+                       onBlur={() => handleStatusUpdate(leadNotes[activeLead.id]?.status || activeLead.Status || "new")}
                        placeholder="Log intelligence..."
                        className="flex-1 bg-white/5 border border-white/10 p-4 rounded-lg text-xs font-medium text-white placeholder:text-white/10 focus:border-white/20 outline-none transition-all resize-none custom-scrollbar min-h-0"
                      />

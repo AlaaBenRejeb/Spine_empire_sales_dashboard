@@ -22,8 +22,16 @@ import FollowUpModal from "@/components/FollowUpModal";
 import { useCRM } from "@/context/CRMContext";
 import { useKanbanScroll } from "@/hooks/useKanbanScroll";
 import { formatDealValueCurrency } from "@/lib/dealValue";
+import { getMetaPriorityAgeMs, getMetaPrioritySlaState, META_PRIORITY_STATUS } from "@/lib/metaPriority";
 
 const COLUMNS = [
+  {
+    id: META_PRIORITY_STATUS,
+    title: "Meta Priority",
+    subtitle: "Fresh Meta leads waiting for first setter touch",
+    accent: "bg-orange-400",
+    border: "border-orange-400/20",
+  },
   {
     id: "new",
     title: "Market Targets",
@@ -68,17 +76,25 @@ const DISPOSITION_STYLES: Record<(typeof CALLED_DISPOSITIONS)[number], string> =
   followup: "border-amber-400/40 bg-amber-400/15 text-amber-100",
 };
 const STAGE_LABELS: Record<(typeof COLUMNS)[number]["id"], string> = {
+  [META_PRIORITY_STATUS]: "Meta Priority",
   new: "New",
   called: "Called",
   booked: "Booked",
   ignored: "Ignored",
 };
 const STAGE_BADGE_STYLES: Record<(typeof COLUMNS)[number]["id"], string> = {
+  [META_PRIORITY_STATUS]: "border-orange-400/30 bg-orange-400/12 text-orange-100",
   new: "border-primary/30 bg-primary/10 text-primary",
   called: "border-amber-400/30 bg-amber-400/10 text-amber-100",
   booked: "border-emerald-400/30 bg-emerald-400/10 text-emerald-100",
   ignored: "border-rose-400/30 bg-rose-400/10 text-rose-100",
 };
+const PRIORITY_SLA_STYLES = {
+  fresh: "border-emerald-400/30 bg-emerald-400/12 text-emerald-100",
+  overdue: "border-amber-400/30 bg-amber-400/12 text-amber-100",
+  escalated: "border-rose-400/30 bg-rose-400/12 text-rose-100",
+} as const;
+const WORKFLOW_STAGE_OPTIONS = COLUMNS.filter((column) => column.id !== META_PRIORITY_STATUS);
 
 type ColumnId = (typeof COLUMNS)[number]["id"];
 type CalledDisposition = (typeof CALLED_DISPOSITIONS)[number];
@@ -135,6 +151,27 @@ const formatRelativeTime = (value?: string | null) => {
     month: "short",
     day: "numeric",
   });
+};
+
+const formatMetaPriorityAge = (value?: string | null) => {
+  const ageMs = getMetaPriorityAgeMs(value);
+  const ageMinutes = Math.floor(ageMs / 60000);
+
+  if (ageMinutes < 1) return "Just in";
+  if (ageMinutes < 60) return `${ageMinutes}m waiting`;
+
+  const ageHours = Math.floor(ageMinutes / 60);
+  if (ageHours < 24) return `${ageHours}h waiting`;
+
+  const ageDays = Math.floor(ageHours / 24);
+  return `${ageDays}d waiting`;
+};
+
+const getPrioritySlaLabel = (value?: string | null) => {
+  const state = getMetaPrioritySlaState(value);
+  if (state === "escalated") return "Escalated";
+  if (state === "overdue") return "Overdue";
+  return "Fresh";
 };
 
 const parseScheduledTimestamp = (value?: string | null) => {
@@ -354,12 +391,13 @@ export default function DealsPage() {
         acc[status] += 1;
         return acc;
       },
-      { new: 0, called: 0, booked: 0, ignored: 0 },
+      { [META_PRIORITY_STATUS]: 0, new: 0, called: 0, booked: 0, ignored: 0 },
     );
   }, [leads, leadNotes]);
 
   const visibleLeadsByStatus = useMemo(() => {
     const grouped: Record<ColumnId, any[]> = {
+      [META_PRIORITY_STATUS]: [],
       new: [],
       called: [],
       booked: [],
@@ -378,6 +416,12 @@ export default function DealsPage() {
     const compareLeads = (status: ColumnId, left: any, right: any) => {
       const leftNotes = leadNotes[left.id] || {};
       const rightNotes = leadNotes[right.id] || {};
+
+      if (status === META_PRIORITY_STATUS) {
+        const leftCreated = new Date(left.MetaPriorityCreatedAt || left.CreatedAt || 0).getTime();
+        const rightCreated = new Date(right.MetaPriorityCreatedAt || right.CreatedAt || 0).getTime();
+        return leftCreated - rightCreated;
+      }
 
       if (status === "called") {
         const leftPriority = DISPOSITION_PRIORITY[leftNotes.called_disposition as CalledDisposition] ?? 3;
@@ -454,6 +498,20 @@ export default function DealsPage() {
                 <span className={`rounded-full border px-3 py-1 text-[10px] font-black uppercase tracking-[0.22em] ${DISPOSITION_STYLES[panelDisposition]}`}>
                   {panelDisposition}
                 </span>
+              )}
+              {panelStatus === META_PRIORITY_STATUS && (
+                <>
+                  <span
+                    className={`rounded-full border px-3 py-1 text-[10px] font-black uppercase tracking-[0.22em] ${
+                      PRIORITY_SLA_STYLES[getMetaPrioritySlaState(expandedLead.MetaPriorityCreatedAt || expandedLead.CreatedAt)]
+                    }`}
+                  >
+                    {getPrioritySlaLabel(expandedLead.MetaPriorityCreatedAt || expandedLead.CreatedAt)}
+                  </span>
+                  <span className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-1 text-[10px] font-black uppercase tracking-[0.22em] text-white/60">
+                    {formatMetaPriorityAge(expandedLead.MetaPriorityCreatedAt || expandedLead.CreatedAt)}
+                  </span>
+                </>
               )}
               <span className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-1 text-[10px] font-black uppercase tracking-[0.22em] text-white/55">
                 Source {expandedLead.Source || "manual"}
@@ -546,7 +604,7 @@ export default function DealsPage() {
       <div className="rounded-[1.5rem] border border-white/10 bg-white/[0.03] p-5">
         <p className="text-[10px] font-black uppercase tracking-[0.24em] text-white/45">Pipeline Stage</p>
         <div className="mt-4 grid gap-2 sm:grid-cols-2">
-          {COLUMNS.map((column) => {
+          {WORKFLOW_STAGE_OPTIONS.map((column) => {
             const active = panelStatus === column.id;
             return (
               <button
@@ -821,6 +879,8 @@ export default function DealsPage() {
                         const status = getStatusForLead(leadNotes, lead.id);
                         const disposition = notes.called_disposition as CalledDisposition | null;
                         const summary = interactionSummaryByLead.get(lead.id);
+                        const priorityTimestamp = lead.MetaPriorityCreatedAt || lead.CreatedAt;
+                        const prioritySlaState = getMetaPrioritySlaState(priorityTimestamp);
                         const lastTouch = summary?.lastInteraction?.occurred_at || notes.synced_at || lead.UpdatedAt || lead.CreatedAt;
                         const lastTouchLabel = summary?.lastInteraction
                           ? `${getInteractionLabel(summary.lastInteraction)} ${formatRelativeTime(summary.lastInteraction.occurred_at)}`
@@ -853,6 +913,16 @@ export default function DealsPage() {
                                     <span className={`rounded-full border px-3 py-1 text-[10px] font-black uppercase tracking-[0.2em] ${DISPOSITION_STYLES[disposition]}`}>
                                       {disposition}
                                     </span>
+                                  )}
+                                  {status === META_PRIORITY_STATUS && (
+                                    <>
+                                      <span className={`rounded-full border px-3 py-1 text-[10px] font-black uppercase tracking-[0.2em] ${PRIORITY_SLA_STYLES[prioritySlaState]}`}>
+                                        {getPrioritySlaLabel(priorityTimestamp)}
+                                      </span>
+                                      <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-[10px] font-black uppercase tracking-[0.2em] text-white/55">
+                                        {formatMetaPriorityAge(priorityTimestamp)}
+                                      </span>
+                                    </>
                                   )}
                                   {isSelected && (
                                     <span className="rounded-full border border-white/15 bg-white/[0.09] px-3 py-1 text-[10px] font-black uppercase tracking-[0.2em] text-white/80">
@@ -892,15 +962,28 @@ export default function DealsPage() {
                               <div className="flex items-center justify-between gap-3">
                                 <div className="min-w-0">
                                   <p className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-white/35">
-                                    <User size={11} /> Contact
+                                    <User size={11} /> {status === META_PRIORITY_STATUS ? "Priority Intake" : "Contact"}
                                   </p>
-                                  <p className="mt-2 truncate text-sm font-bold text-white">
-                                    {[lead["First Name"], lead["Last Name"]].filter(Boolean).join(" ") || "Owner"}
-                                  </p>
+                                  {status === META_PRIORITY_STATUS ? (
+                                    <>
+                                      <p className="mt-2 text-sm font-bold text-white">{formatMetaPriorityAge(priorityTimestamp)}</p>
+                                      <p className="mt-1 text-[10px] font-black uppercase tracking-[0.18em] text-white/38">
+                                        {getPrioritySlaLabel(priorityTimestamp)} queue visibility
+                                      </p>
+                                    </>
+                                  ) : (
+                                    <p className="mt-2 truncate text-sm font-bold text-white">
+                                      {[lead["First Name"], lead["Last Name"]].filter(Boolean).join(" ") || "Owner"}
+                                    </p>
+                                  )}
                                 </div>
                                 <div className="text-right">
-                                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/35">Last touch</p>
-                                  <p className="mt-2 text-sm font-bold text-white">{lastTouchLabel}</p>
+                                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/35">
+                                    {status === META_PRIORITY_STATUS ? "Arrived" : "Last touch"}
+                                  </p>
+                                  <p className="mt-2 text-sm font-bold text-white">
+                                    {status === META_PRIORITY_STATUS ? formatExactTime(priorityTimestamp) : lastTouchLabel}
+                                  </p>
                                 </div>
                               </div>
 
@@ -959,7 +1042,7 @@ export default function DealsPage() {
                                       exit={{ opacity: 0, y: 10, scale: 0.98 }}
                                       className="absolute right-0 top-[calc(100%+0.65rem)] z-30 min-w-[190px] rounded-[1.25rem] border border-white/10 bg-[#111111] p-2 shadow-2xl"
                                     >
-                                      {COLUMNS.filter((columnOption) => columnOption.id !== status).map((columnOption) => (
+                                      {WORKFLOW_STAGE_OPTIONS.filter((columnOption) => columnOption.id !== status).map((columnOption) => (
                                         <button
                                           key={columnOption.id}
                                           onClick={(event) => {
@@ -989,10 +1072,16 @@ export default function DealsPage() {
                         <div className="flex min-h-[260px] flex-col items-center justify-center rounded-[1.75rem] border border-dashed border-white/10 bg-black/20 p-8 text-center">
                           <Target size={44} strokeWidth={3} className="mb-5 text-white/18" />
                           <p className="text-sm font-black uppercase tracking-[0.28em] text-white/30">
-                            {searchQuery || stageFilter !== "all" ? "No leads match this view" : "No leads in this lane"}
+                            {searchQuery || stageFilter !== "all"
+                              ? "No leads match this view"
+                              : column.id === META_PRIORITY_STATUS
+                                ? "No Meta leads in queue"
+                                : "No leads in this lane"}
                           </p>
                           <p className="mt-3 max-w-[220px] text-xs font-medium leading-relaxed text-white/30">
-                            Adjust your filters or add a new lead to get this column moving again.
+                            {column.id === META_PRIORITY_STATUS
+                              ? "Fresh Meta instant-form leads will appear here for the whole setter team until the first outreach claims them."
+                              : "Adjust your filters or add a new lead to get this column moving again."}
                           </p>
                         </div>
                       )}

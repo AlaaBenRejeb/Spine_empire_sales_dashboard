@@ -4,10 +4,24 @@ import { useState, useMemo } from "react";
 import { Search, Phone, Star, MapPin, ChevronRight, MessageSquare, Briefcase, User, ExternalLink } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useCRM } from "@/context/CRMContext";
+import { getMetaPrioritySlaState, META_PRIORITY_STATUS, resolveMetaPriorityCreatedAt } from "@/lib/metaPriority";
+
+const formatMetaPriorityAge = (value?: string | null) => {
+  if (!value) return "Just in";
+
+  const ageMs = Math.max(0, Date.now() - new Date(value).getTime());
+  const ageMinutes = Math.floor(ageMs / 60000);
+
+  if (ageMinutes < 1) return "Just in";
+  if (ageMinutes < 60) return `${ageMinutes}m waiting`;
+
+  const ageHours = Math.floor(ageMinutes / 60);
+  return `${ageHours}h waiting`;
+};
 
 export default function LeadList() {
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<"all" | "new" | "called" | "booked">("all");
+  const [statusFilter, setStatusFilter] = useState<"all" | typeof META_PRIORITY_STATUS | "new" | "called" | "booked">("all");
   const [calledDispositionFilter, setCalledDispositionFilter] = useState<"all" | "hot" | "cold" | "followup">("all");
   const { activeLead, setActiveLead, leadNotes, leads, startOutboundCall } = useCRM();
 
@@ -61,7 +75,7 @@ export default function LeadList() {
           />
         </div>
         <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar min-w-[300px]">
-          {(['all', 'new', 'called', 'booked'] as const).map((status) => (
+          {(['all', META_PRIORITY_STATUS, 'new', 'called', 'booked'] as const).map((status) => (
              <button 
                key={status}
                onClick={() => setStatusFilter(status)}
@@ -71,7 +85,7 @@ export default function LeadList() {
                  : 'bg-background border-glass-border text-muted-foreground hover:border-black'
                }`}
              >
-               {status}
+               {status === META_PRIORITY_STATUS ? 'meta priority' : status}
              </button>
           ))}
           <div className="px-5 py-3 bg-black text-white dark:bg-white dark:text-black font-bold text-[10px] uppercase tracking-widest rounded-xl border border-black dark:border-white whitespace-nowrap shadow-[0_10px_25px_rgba(0,0,0,0.08)]">
@@ -107,6 +121,11 @@ export default function LeadList() {
              const status = notes?.status || "new";
              const calledDisposition = notes?.called_disposition || null;
              const reviews = parseInt(lead["Google Reviews"]?.toString() || "0");
+             const metaPriorityCreatedAt = resolveMetaPriorityCreatedAt(
+               { meta_priority_created_at: lead.MetaPriorityCreatedAt },
+               lead.CreatedAt,
+             );
+             const metaPrioritySla = getMetaPrioritySlaState(metaPriorityCreatedAt);
 
              return (
                <motion.div
@@ -123,6 +142,7 @@ export default function LeadList() {
                  <div className="flex flex-col md:flex-row items-stretch">
                     {/* Status Dot Logic */}
                     <div className={`w-1.5 md:w-2 ${
+                      status === META_PRIORITY_STATUS ? 'bg-orange-500' :
                       status === 'booked' ? 'bg-green-500' : 
                       status === 'called' ? 'bg-yellow-500' : 
                       status === 'ignored' ? 'bg-red-500' : 'bg-muted-foreground/10'
@@ -144,6 +164,24 @@ export default function LeadList() {
                                   <div className="px-2 py-0.5 bg-black text-white dark:bg-white dark:text-black rounded text-[7px] font-black uppercase tracking-widest whitespace-nowrap">
                                     Active
                                   </div>
+                                )}
+                                {status === META_PRIORITY_STATUS && (
+                                  <>
+                                    <div className="px-2 py-0.5 bg-orange-500/10 border border-orange-500/20 rounded text-[7px] font-black text-orange-500 uppercase tracking-widest whitespace-nowrap">
+                                      Meta Priority
+                                    </div>
+                                    <div
+                                      className={`px-2 py-0.5 rounded text-[7px] font-black uppercase tracking-widest whitespace-nowrap ${
+                                        metaPrioritySla === "escalated"
+                                          ? "bg-red-500/10 border border-red-500/20 text-red-500"
+                                          : metaPrioritySla === "overdue"
+                                            ? "bg-amber-500/10 border border-amber-500/20 text-amber-500"
+                                            : "bg-emerald-500/10 border border-emerald-500/20 text-emerald-500"
+                                      }`}
+                                    >
+                                      {formatMetaPriorityAge(metaPriorityCreatedAt)}
+                                    </div>
+                                  </>
                                 )}
                                 {status === 'booked' && (
                                   <div className="px-2 py-0.5 bg-emerald-500/10 border border-emerald-500/20 rounded text-[7px] font-black text-emerald-500 uppercase tracking-widest whitespace-nowrap">

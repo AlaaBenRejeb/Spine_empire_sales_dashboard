@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useEffect, useRef, useState } from "react";
+import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 
 const supabase = createClient();
@@ -9,6 +9,7 @@ import { useAuth } from "@/context/AuthContext";
 import { calculateSetterMetrics, SetterMetrics } from "@/lib/performanceUtils";
 import { normalizeDealValue } from "@/lib/dealValue";
 import { buildGoogleMapsUrl, resolveGoogleMapsUrl } from "@/lib/googleMaps";
+import { META_PRIORITY_STATUS, resolveMetaPriorityCreatedAt } from "@/lib/metaPriority";
 
 type InteractionKind = "call" | "sms" | "email";
 type CalledDisposition = "hot" | "cold" | "followup";
@@ -55,11 +56,16 @@ interface RecordStatusEventInput {
   meta?: Record<string, any>;
 }
 
+interface LeadWriteOptions {
+  claimIfUnclaimed?: boolean;
+  claimOrigin?: string;
+}
+
 interface CRMContextType {
   activeLead: any;
   setActiveLead: (lead: any) => void;
   leadNotes: Record<string, any>;
-  updateLeadNote: (leadId: string, updates: any) => void;
+  updateLeadNote: (leadId: string, updates: any, options?: LeadWriteOptions) => Promise<void>;
   addLead: (lead: any) => Promise<void>;
   assignedCloserName: string | null;
   leads: any[];
@@ -80,6 +86,7 @@ interface CRMContextType {
 const CRMContext = createContext<CRMContextType | undefined>(undefined);
 
 const SETTER_MUTABLE_STATUSES = new Set([
+  META_PRIORITY_STATUS,
   "new",
   "called",
   "contacted",
@@ -88,11 +95,33 @@ const SETTER_MUTABLE_STATUSES = new Set([
 ]);
 
 const isSetterStatusAllowed = (value: string): boolean => SETTER_MUTABLE_STATUSES.has(value);
+const CLAIM_ON_STATUS_CHANGE = new Set(["called", "contacted", "booked", "ignored"]);
 const CALLED_DISPOSITIONS = new Set<CalledDisposition>(["hot", "cold", "followup"]);
 const normalizeCalledDisposition = (value: unknown): CalledDisposition | null => {
   if (typeof value !== "string") return null;
   return CALLED_DISPOSITIONS.has(value as CalledDisposition) ? (value as CalledDisposition) : null;
 };
+
+const shouldHideLeadFromSetter = (lead: any, currentUserId?: string | null): boolean => {
+  if (!currentUserId) return false;
+
+  if (lead?.setter_id && lead.setter_id !== currentUserId) {
+    return true;
+  }
+
+  return false;
+};
+
+const buildLeadNoteEntry = (lead: any) => ({
+  id: lead.id,
+  status: lead.status,
+  comment: lead.metadata?.comment || "",
+  deal_value: normalizeDealValue(lead.metadata?.deal_value),
+  called_disposition: normalizeCalledDisposition(lead.metadata?.called_disposition),
+  scheduled_time: lead.metadata?.scheduled_time || "",
+  synced_at: lead.metadata?.synced_at,
+  setter_id: lead.setter_id,
+});
 
 export function CRMProvider({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
@@ -135,6 +164,31 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
     });
   };
 
+  const removeLeadFromState = useCallback((leadId: string) => {
+    setLeads((prev) => {
+      const exists = prev.some((lead) => lead.id === leadId);
+      if (exists) {
+        setTotalLeadsCount((count) => Math.max(0, count - 1));
+      }
+      return exists ? prev.filter((lead) => lead.id !== leadId) : prev;
+    });
+
+    setLeadNotes((prev) => {
+      if (!prev[leadId]) {
+        return prev;
+      }
+
+      const next = { ...prev };
+      delete next[leadId];
+      if (notesStorageKey) {
+        localStorage.setItem(notesStorageKey, JSON.stringify(next));
+      }
+      return next;
+    });
+
+    setActiveLead((current: any) => (current?.id === leadId ? null : current));
+  }, [notesStorageKey]);
+
   const transformLead = (lead: any) => ({
     id: lead.id,
     "Practice Name": lead.business_name,
@@ -155,6 +209,14 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
       state: lead.metadata?.state,
     }),
     Source: lead.metadata?.source || "manual",
+    Status: lead.status || "new",
+    SetterId: lead.setter_id || null,
+    CloserId: lead.closer_id || null,
+    MetaPriorityCreatedAt: resolveMetaPriorityCreatedAt(lead.metadata, lead.created_at),
+    ClaimedAt: lead.metadata?.claimed_at || null,
+    ClaimedBy: lead.metadata?.claimed_by || null,
+    FirstOutreachAt: lead.metadata?.first_outreach_at || null,
+    ImportedIntakeSummary: lead.metadata?.imported_intake_summary || "",
     CreatedAt: lead.created_at || null,
     UpdatedAt: lead.updated_at || null,
   });
@@ -193,23 +255,18 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
 
         const pageSize = 500;
         let from = 0;
-        let totalCount: number | null = null;
         const dbLeads: any[] = [];
 
         while (true) {
-          const { data: pageLeads, error: pageError, count: pageCount } = await supabase
+          const { data: pageLeads, error: pageError } = await supabase
             .from('leads')
-            .select('*', { count: from === 0 ? 'exact' : undefined })
+            .select('*')
             .order('created_at', { ascending: false })
             .range(from, from + pageSize - 1);
 
           if (pageError) {
             console.error('❌ Leads fetch failed:', pageError.message, pageError.code, pageError.details);
             break;
-          }
-
-          if (from === 0 && pageCount !== null) {
-            totalCount = pageCount;
           }
 
           if (!pageLeads || pageLeads.length === 0) {
@@ -225,28 +282,20 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
           from += pageSize;
         }
 
-        const count = totalCount ?? dbLeads.length;
+        const visibleLeads = dbLeads.filter((lead: any) => !shouldHideLeadFromSetter(lead, sessionUser.id));
+        const count = visibleLeads.length;
 
-        console.log(`✅ Leads Sync: Fetched ${dbLeads.length} leads (Total Pool: ${count})`);
-        if (dbLeads.length === 0) {
+        console.log(`✅ Leads Sync: Fetched ${visibleLeads.length} visible leads (Raw Pool: ${dbLeads.length})`);
+        if (visibleLeads.length === 0) {
           console.warn("⚠️ Database returned 0 leads. Check RLS policies or if table is empty.");
         }
 
-        if (dbLeads.length > 0 || count === 0) {
+        if (visibleLeads.length > 0 || count === 0) {
           setTotalLeadsCount(count);
           const syncedNotes: Record<string, any> = {};
-          const syncedLeads: any[] = dbLeads.map((lead: any) => transformLead(lead));
-          dbLeads.forEach((lead: any) => {
-            syncedNotes[lead.id] = {
-              id: lead.id,
-              status: lead.status,
-              comment: lead.metadata?.comment || "",
-              deal_value: normalizeDealValue(lead.metadata?.deal_value),
-              called_disposition: normalizeCalledDisposition(lead.metadata?.called_disposition),
-              scheduled_time: lead.metadata?.scheduled_time || "",
-              synced_at: lead.metadata?.synced_at,
-              setter_id: lead.setter_id,
-            };
+          const syncedLeads: any[] = visibleLeads.map((lead: any) => transformLead(lead));
+          visibleLeads.forEach((lead: any) => {
+            syncedNotes[lead.id] = buildLeadNoteEntry(lead);
           });
           setLeadNotes((prev) => {
             const next = { ...prev, ...syncedNotes };
@@ -279,20 +328,8 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'leads' }, (payload: any) => {
         const updated = (payload.eventType === 'DELETE' ? payload.old : payload.new) as any;
 
-        if (payload.eventType === 'DELETE') {
-          setLeads(prev => prev.filter(l => l.id !== updated.id));
-          setLeadNotes((prev) => {
-            if (!prev[updated.id]) {
-              return prev;
-            }
-            const next = { ...prev };
-            delete next[updated.id];
-            if (notesStorageKey) {
-              localStorage.setItem(notesStorageKey, JSON.stringify(next));
-            }
-            return next;
-          });
-          setTotalLeadsCount(prev => Math.max(0, prev - 1));
+        if (payload.eventType === 'DELETE' || shouldHideLeadFromSetter(updated, user?.id)) {
+          removeLeadFromState(updated.id);
           return;
         }
 
@@ -301,15 +338,7 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
         setLeadNotes((prev) => {
           const next = {
             ...prev,
-            [updated.id]: {
-              status: updated.status,
-              comment: updated.metadata?.comment || "",
-              deal_value: normalizeDealValue(updated.metadata?.deal_value),
-              called_disposition: normalizeCalledDisposition(updated.metadata?.called_disposition),
-              scheduled_time: updated.metadata?.scheduled_time || "",
-              synced_at: updated.metadata?.synced_at,
-              setter_id: updated.setter_id
-            }
+            [updated.id]: buildLeadNoteEntry(updated)
           };
           if (notesStorageKey) {
             localStorage.setItem(notesStorageKey, JSON.stringify(next));
@@ -332,7 +361,7 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user, notesStorageKey]);
+  }, [removeLeadFromState, user, notesStorageKey]);
 
   useEffect(() => {
     if (!user?.id) {
@@ -579,11 +608,12 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const updateLeadNote = async (leadId: string, updates: any) => {
+  const updateLeadNote = async (leadId: string, updates: any, options: LeadWriteOptions = {}) => {
     if (!leadId) return;
 
     const previousEntry = leadNotes[leadId];
     const hasCalledDispositionUpdate = Object.prototype.hasOwnProperty.call(updates || {}, "called_disposition");
+    const hasExplicitStatusUpdate = Object.prototype.hasOwnProperty.call(updates || {}, "status");
     const requestedDealValueUpdate = Object.prototype.hasOwnProperty.call(updates || {}, "deal_value");
     const canEditDealValue = userRole === "admin" || userRole === "superadmin" || userRole === "closer";
     const hasDealValueUpdate = requestedDealValueUpdate && canEditDealValue;
@@ -605,6 +635,10 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
+    const shouldAttemptClaim =
+      Boolean(options.claimIfUnclaimed) ||
+      (hasExplicitStatusUpdate && CLAIM_ON_STATUS_CHANGE.has(nextStatus));
+
     const optimisticEntry = {
       ...(previousEntry || { status: "new", comment: "" }),
       ...updates,
@@ -612,7 +646,7 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
       called_disposition: normalizedDisposition,
       deal_value: normalizedDealValue,
       synced_at: now,
-      setter_id: user?.id,
+      setter_id: shouldAttemptClaim ? user?.id : previousEntry?.setter_id || null,
       id: leadId,
     };
 
@@ -627,13 +661,19 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
     try {
       const { data: existingLead, error: existingLeadError } = await supabase
         .from("leads")
-        .select("status, metadata, closer_id")
+        .select("status, setter_id, metadata, closer_id")
         .eq("id", leadId)
         .maybeSingle();
 
       if (existingLeadError) {
         throw existingLeadError;
       }
+
+      const existingStatus = (existingLead?.status || previousEntry?.status || "new") as string;
+      const existingMetadata = existingLead?.metadata || {};
+      const isUnclaimedLead = !existingLead?.setter_id;
+      const shouldClaimLead = Boolean(user?.id) && isUnclaimedLead && shouldAttemptClaim;
+      const alreadyOwnedByCurrentSetter = Boolean(user?.id) && existingLead?.setter_id === user?.id;
 
       let bookedCloserId: string | null = null;
       if (nextStatus === "booked") {
@@ -667,11 +707,18 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
       }
 
       const mergedMetadata: Record<string, any> = {
-        ...(existingLead?.metadata || {}),
+        ...existingMetadata,
         status: optimisticEntry.status,
         synced_at: now,
-        setter_id: user?.id,
+        setter_id: shouldClaimLead || alreadyOwnedByCurrentSetter ? user?.id : existingLead?.setter_id || null,
       };
+
+      if (shouldClaimLead) {
+        mergedMetadata.claimed_at = existingMetadata.claimed_at || now;
+        mergedMetadata.claimed_by = existingMetadata.claimed_by || user?.id;
+        mergedMetadata.first_outreach_at = existingMetadata.first_outreach_at || now;
+        mergedMetadata.claim_origin = options.claimOrigin || existingMetadata.claim_origin || null;
+      }
 
       Object.entries(updates || {}).forEach(([key, value]) => {
         if (key === "status") return;
@@ -690,9 +737,11 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
 
       const updatePayload: Record<string, any> = {
         status: optimisticEntry.status,
-        setter_id: user?.id,
         metadata: mergedMetadata,
       };
+      if (shouldClaimLead || alreadyOwnedByCurrentSetter) {
+        updatePayload.setter_id = user?.id;
+      }
       if (bookedCloserId) {
         updatePayload.closer_id = bookedCloserId;
       } else {
@@ -700,13 +749,21 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
         updatePayload.closer_id = null;
       }
 
-      const { data, error } = await supabase
-        .from("leads")
-        .update(updatePayload)
-        .eq("id", leadId)
-        .select();
+      let updateQuery = supabase.from("leads").update(updatePayload).eq("id", leadId);
+
+      if (shouldClaimLead && !alreadyOwnedByCurrentSetter) {
+        updateQuery = updateQuery.is("setter_id", null);
+      }
+
+      const { data, error } = await updateQuery.select();
 
       if (error || !data || data.length === 0) {
+        if (shouldClaimLead) {
+          removeLeadFromState(leadId);
+          console.warn(`⚠️ Lead ${leadId} was claimed by another setter before your action synced.`);
+          return;
+        }
+
         setLeadNotes((prev) => {
           const next = { ...prev };
           if (previousEntry) {
@@ -725,7 +782,7 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
 
       const persistedLead = data[0];
       const persistedMetadata = persistedLead?.metadata || {};
-      const previousStatus = (previousEntry?.status || existingLead?.status || "new") as string;
+      const previousStatus = existingStatus;
       const persistedEntry = {
         ...(previousEntry || {}),
         ...optimisticEntry,
@@ -736,7 +793,7 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
         called_disposition: normalizeCalledDisposition(persistedMetadata.called_disposition),
         scheduled_time: persistedMetadata.scheduled_time || "",
         synced_at: persistedMetadata.synced_at || now,
-        setter_id: persistedLead?.setter_id || user?.id,
+        setter_id: persistedLead?.setter_id || previousEntry?.setter_id || null,
       };
 
       setLeadNotes((prev) => {
@@ -786,7 +843,14 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
 
     const number = (lead.Phone || "").replace(/\D/g, "");
     const disposition = normalizeCalledDisposition(opts?.disposition ?? leadNotes[lead.id]?.called_disposition);
-    await updateLeadNote(lead.id, { status: "called", called_disposition: disposition });
+    await updateLeadNote(
+      lead.id,
+      { status: "called", called_disposition: disposition },
+      {
+        claimIfUnclaimed: true,
+        claimOrigin: "call",
+      },
+    );
     await recordInteraction({
       leadId: lead.id,
       kind: "call",
@@ -812,6 +876,20 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
 
     const messageKind = opts?.kind || "sms";
     const disposition = normalizeCalledDisposition(opts?.disposition ?? leadNotes[lead.id]?.called_disposition);
+    const currentSetterId = leadNotes[lead.id]?.setter_id || lead.SetterId || null;
+    if (!currentSetterId) {
+      await updateLeadNote(
+        lead.id,
+        {
+          status: "contacted",
+          called_disposition: disposition,
+        },
+        {
+          claimIfUnclaimed: true,
+          claimOrigin: messageKind,
+        },
+      );
+    }
     await recordInteraction({
       leadId: lead.id,
       kind: messageKind,
@@ -837,7 +915,7 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
           revenue_range: lead.revenue_range || "Unknown",
           main_challenge: lead.main_challenge || "",
           status: 'new',
-          setter_id: user?.id,
+          setter_id: null,
           google_maps_url: buildGoogleMapsUrl({
             practiceName: lead.business_name,
             city: lead.city,
@@ -869,6 +947,7 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
               deal_value: null,
               called_disposition: null,
               scheduled_time: "",
+              setter_id: null,
             },
           };
           if (notesStorageKey) {
