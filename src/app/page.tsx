@@ -28,9 +28,11 @@ import LeadList from "@/components/LeadList";
 import PersonalTasks from "@/components/PersonalTasks";
 import AddLeadModal from "@/components/AddLeadModal";
 import { useCRM } from "@/context/CRMContext";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useAuth } from "@/context/AuthContext";
 import Image from "next/image";
+import { calculateSetterMetrics } from "@/lib/performanceUtils";
+import type { Timeframe } from "@/lib/timeframe";
 
 function formatTime12Hour(time24: string) {
   if (!time24) return "09:00 AM";
@@ -61,11 +63,18 @@ export default function SetterDashboardContent() {
   const [scheduledDate, setScheduledDate] = useState(new Date().toISOString().split('T')[0]);
   const [scheduledTime, setScheduledTime] = useState("09:00");
   const [isAddLeadModalOpen, setIsAddLeadModalOpen] = useState(false);
+  const [timeframe, setTimeframe] = useState<Timeframe>("all");
 
-  const totalBooked = liveMetrics.totalBooked || 0;
-  const powerScore = liveMetrics.powerScore || 0;
-  const revenue = liveMetrics.projectedRevenue || 0;
-  const conversionRate = liveMetrics.conversionRate || 0;
+  const filteredMetrics = useMemo(() => {
+    if (timeframe === "all") return liveMetrics;
+    if (!user?.id) return liveMetrics;
+    return calculateSetterMetrics(leads, leadNotes, user.id, timeframe);
+  }, [leads, leadNotes, user?.id, timeframe, liveMetrics]);
+
+  const totalBooked = filteredMetrics.totalBooked || 0;
+  const powerScore = filteredMetrics.powerScore || 0;
+  const revenue = filteredMetrics.projectedRevenue || 0;
+  const conversionRate = filteredMetrics.conversionRate || 0;
   const activeLeadId = activeLead?.id ?? null;
 
   const prevActiveLeadId = useRef<string | null>(null);
@@ -201,8 +210,22 @@ export default function SetterDashboardContent() {
         </div>
       )}
 
-      {/* Stats Grid - Ultra Compact */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 shrink-0">
+      {/* Timeframe Filter + Stats Grid */}
+      <div className="flex flex-col gap-3 shrink-0">
+        <div className="flex items-center gap-2">
+          {(["today", "month", "all"] as Timeframe[]).map((value) => (
+            <button
+              key={value}
+              onClick={() => setTimeframe(value)}
+              className={`px-4 py-2 rounded-lg text-[9px] font-black uppercase tracking-[0.2em] transition-all ${
+                timeframe === value ? "bg-white text-black" : "text-white/40 hover:text-white border border-white/10"
+              }`}
+            >
+              {value === "all" ? "All Time" : value === "month" ? "This Month" : "Today"}
+            </button>
+          ))}
+        </div>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {stats.map((stat, i) => (
           <motion.div
             key={stat.label}
@@ -221,6 +244,7 @@ export default function SetterDashboardContent() {
             <div className="text-[8px] font-bold uppercase text-white/30 mt-1 tracking-wider">{stat.label}</div>
           </motion.div>
         ))}
+      </div>
       </div>
 
       {/* CRM Workspace */}

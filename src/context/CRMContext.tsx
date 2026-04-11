@@ -9,6 +9,7 @@ import { useAuth } from "@/context/AuthContext";
 import { calculateSetterMetrics, SetterMetrics } from "@/lib/performanceUtils";
 import { normalizeDealValue } from "@/lib/dealValue";
 import { buildGoogleMapsUrl, resolveGoogleMapsUrl } from "@/lib/googleMaps";
+import { toast } from "sonner";
 import {
   META_PRIORITY_STATUS,
   formatMetaPriorityAge,
@@ -726,6 +727,7 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
 
     if (error) {
       console.error("Failed to write interaction log:", error.message);
+      toast.error("Failed to log interaction");
       return;
     }
 
@@ -756,6 +758,7 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
 
     if (error) {
       console.error("Failed to write lead status event:", error.message);
+      toast.error("Failed to record status change");
       return;
     }
 
@@ -933,6 +936,7 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
           return next;
         });
         console.error(`❌ DB Sync Error [${updates.status}]:`, error?.message || "No rows updated");
+        toast.error("Sync failed — changes reverted");
         return;
       }
 
@@ -988,6 +992,7 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
         return next;
       });
       console.error("❌ Unexpected error during sync:", err);
+      toast.error("Sync failed — check connection");
     }
   };
 
@@ -1114,6 +1119,7 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
       }
     } catch (err) {
       console.error("Unexpected error adding lead:", err);
+      toast.error("Failed to add lead");
     }
   };
 

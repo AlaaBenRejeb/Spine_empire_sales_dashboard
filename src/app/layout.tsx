@@ -7,6 +7,7 @@ import MobileHeader from "@/components/MobileHeader";
 import ScriptBuddy from "@/components/ScriptBuddy";
 import { ThemeProvider } from "@/context/ThemeContext";
 import { CRMProvider, useCRM } from "@/context/CRMContext";
+import { Toaster } from "sonner";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -144,6 +145,22 @@ export default function RootLayout({
             </CRMProvider>
           </AuthProvider>
         </ThemeProvider>
+        <Toaster
+          theme="dark"
+          position="bottom-right"
+          toastOptions={{
+            style: {
+              background: 'rgba(10,10,10,0.95)',
+              border: '1px solid rgba(255,255,255,0.1)',
+              color: 'white',
+              fontFamily: 'inherit',
+              fontSize: '11px',
+              fontWeight: 800,
+              textTransform: 'uppercase' as const,
+              letterSpacing: '0.1em',
+            }
+          }}
+        />
       </body>
     </html>
   );
