@@ -39,7 +39,7 @@ function AppLayout({ children }: { children: React.ReactNode }) {
   if (isAuthPage) return <>{children}</>;
 
   return (
-    <div className="flex bg-background min-h-screen">
+    <div className="flex bg-black min-h-screen">
       <MobileHeader 
         isOpen={isMobileMenuOpen} 
         onToggle={() => setIsMobileMenuOpen(!isMobileMenuOpen)} 
