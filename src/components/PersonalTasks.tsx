@@ -33,7 +33,7 @@ export default function PersonalTasks({ theme }: { theme: "dark" | "light" }) {
     e.preventDefault();
     if (!input.trim()) return;
     const newTask: Task = {
-      id: Date.now().toString(),
+      id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
       text: input,
       completed: false,
       priority: "med"

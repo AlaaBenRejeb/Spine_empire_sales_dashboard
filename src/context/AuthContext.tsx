@@ -42,7 +42,7 @@ export function AuthProvider({
   const checkPortalAccess = useCallback((userProfile: any) => {
     if (userProfile?.role === 'superadmin') return;
     if (!userProfile) return;
-    if (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) return;
+    if (process.env.NODE_ENV !== 'production') return;
     
     const role = userProfile.role;
     const hasAdminAccess = role === 'admin' || role === 'superadmin';

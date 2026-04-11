@@ -184,6 +184,24 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
   const fetchedRef = useRef(false);
   const notesStorageKey = user?.id ? `spine-empire-lead-notes-${user.id}` : null;
 
+  // Bug #12 fix: Centralized channel registry to prevent subscription accumulation
+  const activeChannelsRef = useRef<Set<any>>(new Set());
+
+  const registerChannel = (channel: any) => {
+    activeChannelsRef.current.add(channel);
+    return channel;
+  };
+
+  // Master cleanup: remove all channels on unmount
+  useEffect(() => {
+    return () => {
+      activeChannelsRef.current.forEach((ch) => {
+        try { supabase.removeChannel(ch); } catch {}
+      });
+      activeChannelsRef.current.clear();
+    };
+  }, []);
+
   const dismissMetaPriorityLiveAlert = useCallback(() => {
     setLiveMetaPriorityAlert(null);
   }, []);
@@ -371,7 +389,7 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
     }
 
     // 2. Real-time Lead Sync
-    const channel = supabase
+    const channel = registerChannel(supabase
       .channel('leads-setter-sync')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'leads' }, (payload: any) => {
         const updated = (payload.eventType === 'DELETE' ? payload.old : payload.new) as any;
@@ -423,9 +441,10 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
           }
         });
       })
-      .subscribe();
+      .subscribe());
 
     return () => {
+      activeChannelsRef.current.delete(channel);
       supabase.removeChannel(channel);
     };
   }, [removeLeadFromState, user, notesStorageKey]);
@@ -474,7 +493,7 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
 
     fetchInteractions();
 
-    const interactionsChannel = supabase
+    const interactionsChannel = registerChannel(supabase
       .channel(`lead-interactions-${user.id}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "lead_interactions" }, (payload: any) => {
         if (payload.eventType === "DELETE") {
@@ -488,9 +507,10 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
         if (!entry?.id) return;
         upsertInteractionInState(entry);
       })
-      .subscribe();
+      .subscribe());
 
     return () => {
+      activeChannelsRef.current.delete(interactionsChannel);
       supabase.removeChannel(interactionsChannel);
     };
   }, [user?.id]);
@@ -517,7 +537,7 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
 
     fetchStatusEvents();
 
-    const statusEventsChannel = supabase
+    const statusEventsChannel = registerChannel(supabase
       .channel(`lead-status-events-${user.id}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "lead_status_events" }, (payload: any) => {
         if (payload.eventType === "DELETE") {
@@ -531,9 +551,10 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
         if (!entry?.id) return;
         upsertStatusEventInState(entry);
       })
-      .subscribe();
+      .subscribe());
 
     return () => {
+      activeChannelsRef.current.delete(statusEventsChannel);
       supabase.removeChannel(statusEventsChannel);
     };
   }, [user?.id]);
@@ -559,7 +580,7 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
     fetchCurrentMetrics();
 
     // Subscribe to real-time intelligence updates
-    const performanceChannel = supabase
+    const performanceChannel = registerChannel(supabase
       .channel(`performance-${user.id}`)
       .on('postgres_changes', { 
         event: '*', 
@@ -570,9 +591,10 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
         console.log("⚡ Intelligence Update:", payload.new);
         setUserPerformance(payload.new);
       })
-      .subscribe();
+      .subscribe());
 
     return () => {
+      activeChannelsRef.current.delete(performanceChannel);
       supabase.removeChannel(performanceChannel);
     };
   }, [user?.id]);
@@ -587,7 +609,7 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
       if (data?.first_name) setAssignedCloserName(data.first_name);
     };
 
-    const mappingChannel = supabase.channel(`mapping-${user.id}`)
+    const mappingChannel = registerChannel(supabase.channel(`mapping-${user.id}`)
       .on('postgres_changes', { 
         event: '*', 
         schema: 'public', 
@@ -600,11 +622,12 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
         if (newCloserId) fetchCloserName(newCloserId);
         else setAssignedCloserName(null);
       })
-      .subscribe();
+      .subscribe());
 
     if (assignedCloserId) fetchCloserName(assignedCloserId);
 
     return () => {
+      activeChannelsRef.current.delete(mappingChannel);
       supabase.removeChannel(mappingChannel);
     };
   }, [user?.id, assignedCloserId]);

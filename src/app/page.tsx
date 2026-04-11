@@ -260,6 +260,10 @@ export default function SetterDashboardContent() {
                      <h2 className="text-2xl md:text-3xl font-black tracking-tighter leading-tight uppercase italic text-white truncate pr-10">{activeLead["Practice Name"]}</h2>
                      <p className="text-[9px] text-white/20 uppercase tracking-[0.3em] font-bold">{activeLead.City} • {activeLead.Phone}</p>
                      <p className="text-[9px] text-white/30 uppercase tracking-[0.25em] font-bold">SOURCE • {activeLead.Source || "manual"}</p>
+                     {activeLead["Google Maps URL"] && (
+                       <a
+                         href={activeLead["Google Maps URL"]}
+                         target="_blank"
                          rel="noopener noreferrer"
                          className="mt-2 inline-flex w-fit items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-[9px] font-black uppercase tracking-[0.22em] text-white/70 transition-colors hover:border-white/20 hover:text-white"
                        >
