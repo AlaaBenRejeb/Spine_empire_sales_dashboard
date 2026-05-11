@@ -42,8 +42,8 @@ export default function LeadList() {
 
   const filteredLeads = useMemo(() => {
     return leads.filter(lead => {
-      const matchesSearch = lead["Practice Name"].toLowerCase().includes(search.toLowerCase()) ||
-                           lead.City.toLowerCase().includes(search.toLowerCase());
+      const matchesSearch = (lead["Practice Name"] || "").toLowerCase().includes(search.toLowerCase()) ||
+                           (lead.City || "").toLowerCase().includes(search.toLowerCase());
       
       if (!matchesSearch) return false;
       const notes = leadNotes[lead.id];

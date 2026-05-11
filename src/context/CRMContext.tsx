@@ -979,6 +979,27 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
         return next;
       });
 
+      if (shouldClaimLead) {
+        void supabase.auth
+          .getSession()
+          .then((sessionResult: { data: { session?: { access_token?: string } | null } }) => {
+            const accessToken = sessionResult.data.session?.access_token;
+            if (!accessToken) return null;
+
+            return fetch("/api/notifications/lead-claimed", {
+              method: "POST",
+              headers: {
+                Authorization: `Bearer ${accessToken}`,
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({ leadId }),
+            });
+          })
+          .catch((error: unknown) => {
+            console.error("Lead claim notification failed:", error);
+          });
+      }
+
       if (previousStatus !== persistedEntry.status) {
         await recordStatusEvent({
           leadId,
